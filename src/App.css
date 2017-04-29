@@ -1,0 +1,54 @@
+h2, h4, button {
+	font-family: Ubuntu, "Open Sans", Arial, sans-serif;
+	-webkit-font-smoothing: antialiased;
+	font-smoothing: antialiased;
+}
+
+#content {
+    box-sizing: border-box;
+    font-family: "Open Sans", Arial, sans-serif;
+    margin: 0 auto;
+    overflow-x: hidden;
+    width: 980px;
+}
+
+.row {
+    box-sizing: border-box;
+    float: left;
+    overflow: hidden;
+    width: 100%;
+}
+
+.centered {
+    text-align: center;
+}
+
+.list {
+	font-family: "Open Sans", Arial, sans-serif;
+	font-size: 14px;
+}
+
+.list > li {
+	margin-bottom: 5px;
+}
+
+#result {
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    height: 500px;
+    margin: 25px 0 0 0;
+    overflow-y: scroll;
+    padding: 15px;
+    white-space: pre;
+}
+
+pre {
+    outline: 1px solid #ccc;
+    padding: 5px;
+    margin: 5px;
+}
+.string { color: darkgreen; }
+.number { color: orangered; }
+.boolean { color: blue; }
+.null { color: magenta; }
+.key { color: red; }
