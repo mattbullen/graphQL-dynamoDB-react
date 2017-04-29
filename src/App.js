@@ -129,31 +129,47 @@ class App extends React.PureComponent {
 	// Saves the tuples to GrapheneDB, then queries the database for all tuples.
 	__saveToGrapheneDB(tuples) {
 		
-		const graphenedbURL = process.env.GRAPHENEDB_BOLT_URL,
-			  graphenedbUser = process.env.GRAPHENEDB_BOLT_USER,
-			  graphenedbPass = process.env.GRAPHENEDB_BOLT_PASSWORD;
-		const driver = v1.driver(graphenedbURL, v1.auth.basic(graphenedbUser, graphenedbPass));
+		return fetch(
+            "https://api.heroku.com/apps/tree-tuples/config-vars",
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/vnd.heroku+json; version=3"
+                }
+            }
+        )
+        .then((result) => {
+            console.log("\nApp.__saveToGrapheneDB() - GET Heroku config variables success:", result);
+			
+			const driver = v1.driver(result.GRAPHENEDB_BOLT_URL, v1.auth.basic(result.GRAPHENEDB_BOLT_USER, result.GRAPHENEDB_BOLT_PASSWORD));
+			
+			driver.onError = (error) => {
+			  console.log("\n", error);
+			};
+			
+			return driver.onCompleted = () => {
+				console.log("App.__saveToGrapheneDB() - driver instantiation succeeded.");
+				const session = driver.session();
+				session.run("CREATE (n:Tree {name: 'AAA', size: '111'}) RETURN n")
+				.then((result) => {
+					console.log("\nApp.__saveToGrapheneDB() - save node success:", result);
+					session.close();
+					driver.close();
+					return result;
+				}).catch((error) => {
+					console.log("\nApp.__saveToGrapheneDB() - save node error:", error);
+					session.close();
+					driver.close();
+					return error;
+				});
+			};
+			
+        }).catch((error) => {
+            console.log("\nApp.__saveToGrapheneDB() - GET Heroku config variables error:", error);
+        });
 		
-		driver.onError = (error) => {
-		  console.log("\n", error);
-		};
 		
-		return driver.onCompleted = () => {
-			console.log("App.__saveToGrapheneDB() - driver instantiation succeeded.");
-			const session = driver.session();
-			session.run("CREATE (n:Tree {name: 'AAA', size: '111'}) RETURN n")
-			.then((result) => {
-				console.log("\nApp.__saveToGrapheneDB() - save node success:", result);
-				session.close();
-				driver.close();
-				return result;
-			}).catch((error) => {
-				console.log("\nApp.__saveToGrapheneDB() - save node error:", error);
-				session.close();
-				driver.close();
-				return error;
-			});
-		};
+		
 	}
 
     // Creates the tuple names ("a > b > etc.") and image counts.
@@ -220,15 +236,15 @@ class App extends React.PureComponent {
                 mode: "cors"
             }
         )
-        .then(result => result.text())
-        .then(text => (new window.DOMParser()).parseFromString(text, "text/xml"))
-        .then((xml) => {
-            var parsed = app.__xmlToJSON(xml);
+        .then((result) => { 
+			return result.text();
+		}).then((xml) => {
+			return (new window.DOMParser()).parseFromString(xml, "text/xml");
+		}).then((xml) => {
+            // const parsed = app.__xmlToJSON(xml);
             // console.log("\nApp.__scrape(" + id + ") GET:", parsed);
-            return parsed;
-
-        })
-        .catch((error) => {
+            return app.__xmlToJSON(xml);
+        }).catch((error) => {
             console.log("\nApp.__scrape(" + id + ") error:", error);
         });
     }
