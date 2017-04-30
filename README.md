@@ -1,2 +1,5 @@
-# graphQL-neo4j-react
-Sample code using GraphQL with Apollo.js, Neo4J / GrapheneDB with Bolt, and React.js
+## Tuples & Trees
+
+Sample project that scrapes the Stanford machine learning image library to parse, save and assemble tuples and object trees. Uses GraphQL via Apollo.js, AWS DynamoDB via the AWS Web SDJ, and React.js.
+
+##### Live site: [https://tree-tuples.herokuapp.com/](https://tree-tuples.herokuapp.com/)

@@ -15,7 +15,7 @@ import AWS from "aws-sdk";
 
 // Work around for deprecated Node function used by several dependencies.
 import { Querystring } from "request/lib/querystring.js";
-Querystring.prototype.unescape = function(value) { return encodeURIComponent(value); };
+Querystring.prototype.unescape = function(value) { return window.encodeURIComponent(value); };
 
 // Needed for onTouchTap.
 // http://stackoverflow.com/a/34015469/988941
@@ -49,7 +49,10 @@ class App extends React.PureComponent {
 		// In this scenario, simply using its internal state object for everything is simpler and more efficient. "45950"
         this.state = {
 			apollo: this.startApolloClient(),
-			aws: [],
+			aws: {
+				env: {},
+				tuples: []
+			},
             search: {
                 baseID: "82127",
                 disabled: true,
@@ -59,7 +62,7 @@ class App extends React.PureComponent {
                 result: ""
             },
             start: {
-                disabled: false
+                disabled: true
             },
             style: {
 				buttons: {
@@ -101,6 +104,34 @@ class App extends React.PureComponent {
         this.setID = this.setID.bind(this);
     }
 	
+	componentDidMount() {
+		const app = this;
+		fetch("https://cors-anywhere.herokuapp.com/http://www.matthewbullen.net/misc/string.php")
+		.then((response) => { 
+			return response.arrayBuffer();
+		}).then((buffer) => { 
+			let u8, parsed;
+			u8 = new Uint8Array(buffer);
+			parsed = String.fromCharCode.apply(String, u8);
+			parsed = window.atob(parsed).split("*");
+			const newState = update(app.state, {
+				aws: {
+					env: { 
+						a: { $set: parsed[0] },
+						b: { $set: parsed[1] },
+						r: { $set: "us-west-2" }
+					}
+				},
+				start: {
+					disabled: { $set: false }
+				}
+			});
+			app.setState(newState, () => {})
+		}).catch((error) => {
+            console.error("\nApp.componentDidMount() - error:", error);
+        });
+	}
+	
     // Creates an Apollo client to access the GraphQL database.
     startApolloClient() {
         return new ApolloClient({
@@ -140,13 +171,12 @@ class App extends React.PureComponent {
 	__saveToDynamoDB(tuples) {                                                                                                       
 		const app = this;
 		
-		console.log(process.env);
-
+		const env = Object.assign(this.state.aws.env);
 		AWS.config.update({
-			region: process.env["AWS_REGION"],
+			region: env.r,
 			credentials: { 
-				accessKeyId: process.env["AWS_ACCESS_KEY_ID"], 
-				secretAccessKey: process.env["AWS_SECRET_ACCESS_KEY"] 
+				accessKeyId: env.a, 
+				secretAccessKey: env.b
 			},
 			paramValidation: false
 		});
@@ -222,9 +252,11 @@ class App extends React.PureComponent {
 				if (error) {
 					console.error("\nApp.__saveToDynamoDB() - GET error:", error);
 				} else {
-					let list = Array.from(app.state.aws);
+					let list = Array.from(app.state.aws.tuples);
 					const newState = update(app.state, {
-						aws: { $set: list.concat(result.Items) }
+						aws: {
+							tuples: { $set: list.concat(result.Items) }
+						}
 					});
 					app.setState(newState, () => {
 						console.log("\nApp.__saveToDynamoDB() - GET success:", app.state);
@@ -236,7 +268,7 @@ class App extends React.PureComponent {
 
 	// Takes the AWS-formatted tuples and converts them back to their original format.
 	__assembleTuplesFromDynamoDB() {
-		let i, item, rawTuples = Array.from(this.state.aws), finalTuples = [];
+		let i, item, rawTuples = Array.from(this.state.aws.tuples), finalTuples = [];
 		for (i = 0; i < rawTuples.length; i++) {
 			item = Object.assign(rawTuples[i]).tuple.split("***");
 			finalTuples.push({
