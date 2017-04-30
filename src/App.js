@@ -133,7 +133,7 @@ class App extends React.PureComponent {
 	// Saves the tuples to GrapheneDB, then queries the database for all tuples.
 	__saveToGrapheneDB(tuples) {                                                                                                       
 
-		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.gzSnhpXDE9Ya.9IDrhljzYqFLE9F0"), { encrypted: "ENCRYPTION_ON" });
+		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.9G7fygPTCGs1.Kfz6RfH8ZvkK9IkE"), { encrypted: "ENCRYPTION_ON" });
 			
 		driver.onError = (error) => {
 			console.log("\n", error);
@@ -141,35 +141,32 @@ class App extends React.PureComponent {
 			
 		return driver.onCompleted = (() => {
 			console.log("\nApp.__saveToGrapheneDB() - driver instantiation succeeded.");
-			
 			let session = driver.session();
 				
 				let i, item;
 				for (i = 0; i < tuples.length; i++) {
 					item = tuples[i];
-					session.run("CREATE (n:Tree {name:" + item.name + ", size:" + item.size + "}) RETURN n")
+					session.run("MERGE (n:Tuple {name: {nameParam}}) RETURN n", { nameParam:'Alice' })
 					.then((result) => {
 						console.log("\nApp.__saveToGrapheneDB() - save node success:", result);
-						// session.close();
+						session.close();
 					}).catch((error) => {
 						console.log("\nApp.__saveToGrapheneDB() - save node error:", error);
 					});
 				}
 				
-				session.run("MATCH (n) RETURN n.name, n.size")
+				session.run("MATCH (n:Tuple) RETURN n")
 				.then((result) => {
 					console.log("\nApp.__saveToGrapheneDB() - retrieve all nodes success:", result);
 					session.close();
-					driver.close();
 					return result;
 				}).catch((error) => {
 					console.log("\nApp.__saveToGrapheneDB() - retrieve all nodes error:", error);
 					session.close();
-					driver.close();
 					return error;
-				});
-			
-		})();		
+				});		
+		})();
+	
 	}
 	
 	// "Accept": "application/json",
