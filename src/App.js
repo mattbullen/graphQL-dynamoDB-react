@@ -57,6 +57,10 @@ class App extends React.PureComponent {
                 disabled: false
             },
             style: {
+				buttons: {
+					fontSize: "16px",
+					textTransform: "none"
+				},
                 color: {
 					borderColor: "#448aff",
 					color: "#448aff"
@@ -129,7 +133,7 @@ class App extends React.PureComponent {
 	// Saves the tuples to GrapheneDB, then queries the database for all tuples.
 	__saveToGrapheneDB(tuples) {                                                                                                       
 
-		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.gzSnhpXDE9Ya.9IDrhljzYqFLE9F0"));
+		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.gzSnhpXDE9Ya.9IDrhljzYqFLE9F0"), { encrypted: "ENCRYPTION_ON" });
 			
 		driver.onError = (error) => {
 			console.log("\n", error);
@@ -579,6 +583,7 @@ class App extends React.PureComponent {
                             label={"GrapheneDB"}
                             primary={true}
 							style={this.state.style.grapheneDB}
+							labelStyle={this.state.style.buttons}
                             onClick={this.runGrapheneDB}
                         />
                     </MuiThemeProvider>
@@ -589,6 +594,7 @@ class App extends React.PureComponent {
                             label={"GraphQL"}
                             primary={true}
 							style={this.state.style.graphQL}
+							labelStyle={this.state.style.buttons}
                             onClick={this.runGraphQL}
                         />
                     </MuiThemeProvider>
