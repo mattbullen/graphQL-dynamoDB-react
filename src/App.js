@@ -27,8 +27,8 @@ import getMuiTheme from "material-ui/styles/getMuiTheme";
 const muiTheme = getMuiTheme({
     fontFamily: "'Open Sans', Arial, sans-serif",
     raisedButton: {
-        primaryColor: "blue",
-        secondaryColor: "blue"
+        primaryColor: "#448aff",
+        secondaryColor: "#448aff"
     }
 });
 
@@ -58,8 +58,8 @@ class App extends React.PureComponent {
             },
             style: {
                 color: {
-					borderColor: "blue",
-					color: "blue"
+					borderColor: "#448aff",
+					color: "#448aff"
 				},
 				grapheneDB: {
 					margin: "5px 40px 0 0",
@@ -137,19 +137,41 @@ class App extends React.PureComponent {
 			
 		return driver.onCompleted = () => {
 			console.log("App.__saveToGrapheneDB() - driver instantiation succeeded.");
+			
 			const session = driver.session();
-			session.run("CREATE (n:Tree {name: 'AAA', size: '111'}) RETURN n")
-			.then((result) => {
-				console.log("\nApp.__saveToGrapheneDB() - save node success:", result);
-				session.close();
-				driver.close();
-				return result;
-			}).catch((error) => {
-				console.log("\nApp.__saveToGrapheneDB() - save node error:", error);
-				session.close();
-				driver.close();
-				return error;
-			});
+			session.run("MATCH (n) DETACH DELETE n")
+				.then((result) => {
+					console.log("\nApp.__saveToGrapheneDB() - clear prior nodes success:", result);
+					
+				}).catch((error) => {
+					console.log("\nApp.__saveToGrapheneDB() - clear prior nodes error:", error);
+				});
+				
+				let i, item;
+				for (i = 0; i < tuples.length; i++) {
+					item = tuples[i];
+					session.run("CREATE (n:Tree {name:" + item.name + ", size:" + item.size + "}) RETURN n")
+					.then((result) => {
+						// console.log("\nApp.__saveToGrapheneDB() - save node success:", result);
+						
+					}).catch((error) => {
+						console.log("\nApp.__saveToGrapheneDB() - save node error:", error);
+					});
+				}
+				
+				session.run("MATCH (n) RETURN n.name, n.size")
+				.then((result) => {
+					console.log("\nApp.__saveToGrapheneDB() - retrieve all nodes success:", result);
+					session.close();
+					driver.close();
+					return result;
+				}).catch((error) => {
+					console.log("\nApp.__saveToGrapheneDB() - retrieve all nodes error:", error);
+					session.close();
+					driver.close();
+					return error;
+				});
+			
 		};		
 	}
 
@@ -402,9 +424,9 @@ class App extends React.PureComponent {
     // Formats search results for display.
     __formatJSON(json) {
         if (typeof json !== "string") {
-            json = JSON.stringify(json, undefined, 2);
+            json = JSON.stringify(json, undefined, 5);
         }
-        json = json.replace(/&/g, "&amp;").replace(/</g, '&lt;').replace(/>/g, "&gt;");
+        json = json.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
             (match) => {
                 let cls = "number";
@@ -474,8 +496,10 @@ class App extends React.PureComponent {
 					resolve(this.__saveToGrapheneDB(tuples))
                 }).then((result) => {
 					
-                    console.log("\nApp.runGrapheneDB() - data saved to / returned from GrapheneDB:", result);
-					
+					result.records.forEach((record) => {
+						console.log("\nApp.runGrapheneDB() - data saved to / returned from GrapheneDB:", record._fields);
+					});
+                    
                 }).catch((error) => {
                     console.log("\nApp.runGrapheneDB() - error:", error);
                 });

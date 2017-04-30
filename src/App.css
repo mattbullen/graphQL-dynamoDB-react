@@ -4,6 +4,27 @@ h2, h4, button {
 	font-smoothing: antialiased;
 }
 
+pre {
+    outline: 1px solid #ccc;
+    padding: 5px;
+    margin: 5px;
+}
+
+a,
+a:visited,
+.string,
+.number,
+.boolean,
+.null { 
+	color: #448aff;
+	font-size: 14px;
+}
+
+.key { 
+	color: #ff5722;
+	font-size: 14px;
+}
+
 #content {
     box-sizing: border-box;
     font-family: "Open Sans", Arial, sans-serif;
@@ -41,14 +62,3 @@ h2, h4, button {
     padding: 15px;
     white-space: pre;
 }
-
-pre {
-    outline: 1px solid #ccc;
-    padding: 5px;
-    margin: 5px;
-}
-.string { color: darkgreen; }
-.number { color: orangered; }
-.boolean { color: blue; }
-.null { color: magenta; }
-.key { color: red; }
