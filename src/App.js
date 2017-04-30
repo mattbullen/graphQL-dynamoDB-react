@@ -12,6 +12,7 @@ import { ApolloClient, createNetworkInterface, gql } from "react-apollo";
 
 // AWS SDK.
 import AWS from "aws-sdk";
+import "amazon-cognito-js";
 
 // Work around for deprecated Node function used by several dependencies.
 import { Querystring } from "request/lib/querystring.js";
@@ -100,6 +101,10 @@ class App extends React.PureComponent {
         this.setID = this.setID.bind(this);
     }
 
+	componentDidMount() {
+		
+	}
+	
     // Creates an Apollo client to access the GraphQL database.
     createClient() {
         return new ApolloClient({
@@ -136,8 +141,85 @@ class App extends React.PureComponent {
 	
 	__saveToDynamoDB(tuples) {                                                                                                       
 
+		tuples = { name: "AAA", size: 1 }; 
 		
-	
+		AWS.config.region = "us-west-2";
+		AWS.config.endpoint = "https://tree-tuples.herokuapp.com/";
+		AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+			IdentityPoolId: "us-west-2:fd478a29-dde3-480d-b0ed-c862582858ed"
+		});
+		
+		let list = [];
+		
+		AWS.config.credentials.get(function(){
+		   const syncClient = new AWS.CognitoSyncManager();
+		   syncClient.openOrCreateDataset("tuplesDataset", function(err, dataset) {
+				dataset.put("timestamp", new Date().getUTCMilliseconds(), (error, record) => {
+				dataset.synchronize({
+
+						onSuccess: function(data, newRecords) {
+						
+							console.log(data, newRecords);
+						
+							const docClient = new AWS.DynamoDB.DocumentClient(); console.log(docClient);
+
+							let i, item, length = tuples.length;
+							for (i = 0; i < length; i++) {
+								item = tuples[i];
+								docClient.put({
+									TableName: "Tuples",
+									Item: {
+										"id": "" + i,
+										"tuple": item.name + "***" + item.size
+									}
+								}, function(error, data) {
+									if (error) {
+										console.error("PUT error:", error);
+									} else {
+										console.log("PUT success:", data);
+									}
+								});
+							}
+						
+							for (i = 0; i < length; i++) {
+								docClient.get({
+									TableName: "Tuples",
+									Item: { "id": "" + i }
+								}, function(error, data) {
+									if (error) {
+										console.error("GET error:", error);
+									} else {
+										console.log("GET success:", data);
+										list.push(data);
+									}
+								});
+							}
+							console.log(list);
+							
+							for (i = 0; i < length; i++) {
+								item = tuples[i];
+								docClient.delete({
+									TableName: "Tuples",
+									Item: { "id": "" + i }
+								}, function(error, data) {
+									if (error) {
+										console.error("DELETE error:", error);
+									} else {
+										console.log("DELETE success:", data);
+									}
+								});
+							}
+							
+							// return list;
+						
+						}
+
+					});
+				});
+		   });
+		});
+		
+		return list;
 	}
 
     // Creates the tuple names ("a > b > etc.") and image counts.
@@ -444,7 +526,7 @@ class App extends React.PureComponent {
 
 	// Runs the GrapheneDB sequence.
     runDynamoDB() {
-		console.log("\n----- Neo4J / GrapheneDB -----");
+		console.log("\n----- AWS DynamoDB -----");
 		
         new Promise((resolve, reject) => {
             resolve(this.__scrape(this.state.search.baseID));
@@ -542,7 +624,7 @@ class App extends React.PureComponent {
 					<MuiThemeProvider muiTheme={muiTheme}>
                         <RaisedButton
                             disabled={this.state.start.disabled}
-                            label={"GrapheneDB"}
+                            label={"DynamoDB"}
                             primary={true}
 							style={this.state.style.grapheneDB}
 							labelStyle={this.state.style.buttons}
