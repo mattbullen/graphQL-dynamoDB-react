@@ -139,6 +139,8 @@ class App extends React.PureComponent {
 	// This makes use of DynamoDB's batch transaction feature to limit the number of network requests.
 	__saveToDynamoDB(tuples) {                                                                                                       
 		const app = this;
+		
+		console.log(process.env);
 
 		AWS.config.update({
 			region: process.env["AWS_REGION"],
