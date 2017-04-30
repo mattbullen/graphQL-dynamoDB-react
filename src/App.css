@@ -1,7 +1,7 @@
 h2, h4, button {
-	font-family: Ubuntu, "Open Sans", Arial, sans-serif;
-	-webkit-font-smoothing: antialiased;
-	font-smoothing: antialiased;
+    font-family: Ubuntu, "Open Sans", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-smoothing: antialiased;
 }
 
 pre {
@@ -16,13 +16,13 @@ a:visited,
 .number,
 .boolean,
 .null { 
-	color: #448aff;
-	font-size: 14px;
+    color: #448aff;
+    font-size: 14px;
 }
 
 .key { 
-	color: #ff5722;
-	font-size: 14px;
+    color: #ff5722;
+    font-size: 14px;
 }
 
 #content {
@@ -45,12 +45,12 @@ a:visited,
 }
 
 .list {
-	font-family: "Open Sans", Arial, sans-serif;
-	font-size: 14px;
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: 14px;
 }
 
 .list > li {
-	margin-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 #result {

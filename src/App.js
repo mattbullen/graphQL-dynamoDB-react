@@ -45,14 +45,14 @@ class App extends React.PureComponent {
     constructor(props) {
         super(props);
         
-		// This is a one-time, one-use component. It's not being passed any props from a parent component.
-		// In this scenario, simply using its internal state object for everything is simpler and more efficient. "45950"
+        // This is a one-time, one-use component. It's not being passed any props from a parent component.
+        // In this scenario, simply using its internal state object for everything is simpler and more efficient. "45950"
         this.state = {
-			apollo: this.startApolloClient(),
-			aws: {
-				env: {},
-				tuples: []
-			},
+            apollo: this.startApolloClient(),
+            aws: {
+                env: {},
+                tuples: []
+            },
             search: {
                 baseID: "82127",
                 disabled: true,
@@ -65,21 +65,21 @@ class App extends React.PureComponent {
                 disabled: true
             },
             style: {
-				buttons: {
-					fontSize: "16px",
-					textTransform: "none"
-				},
+                buttons: {
+                    fontSize: "16px",
+                    textTransform: "none"
+                },
                 color: {
-					borderColor: "#448aff",
-					color: "#448aff"
-				},
-				dynamoDB: {
-					width: "150px"
-				},
-				graphQL: {
-					margin: "10px 40px 0 0",
-					width: "150px"
-				},
+                    borderColor: "#448aff",
+                    color: "#448aff"
+                },
+                dynamoDB: {
+                    width: "150px"
+                },
+                graphQL: {
+                    margin: "10px 40px 0 0",
+                    width: "150px"
+                },
                 id: {
                     float: "left",
                     marginRight: "40px",
@@ -97,41 +97,41 @@ class App extends React.PureComponent {
             }
         };
 
-		// Binds the DOM event functions to the DOM components.
-		this.runDynamoDB = this.runDynamoDB.bind(this);
+        // Binds the DOM event functions to the DOM components.
+        this.runDynamoDB = this.runDynamoDB.bind(this);
         this.runGraphQL = this.runGraphQL.bind(this);
         this.search = this.search.bind(this);
         this.setID = this.setID.bind(this);
     }
-	
-	componentDidMount() {
-		const app = this;
-		fetch("https://cors-anywhere.herokuapp.com/http://www.matthewbullen.net/misc/string.php")
-		.then((response) => { 
-			return response.arrayBuffer();
-		}).then((buffer) => { 
-			let u8, parsed;
-			u8 = new Uint8Array(buffer);
-			parsed = String.fromCharCode.apply(String, u8);
-			parsed = window.atob(parsed).split("*");
-			const newState = update(app.state, {
-				aws: {
-					env: { 
-						a: { $set: window.btoa(parsed[0]) },
-						b: { $set: window.btoa(parsed[1]) },
-						r: { $set: window.btoa("us-west-2") }
-					}
-				},
-				start: {
-					disabled: { $set: false }
-				}
-			});
-			app.setState(newState, () => {})
-		}).catch((error) => {
+    
+    componentDidMount() {
+        const app = this;
+        fetch("https://cors-anywhere.herokuapp.com/http://www.matthewbullen.net/misc/string.php")
+        .then((response) => { 
+            return response.arrayBuffer();
+        }).then((buffer) => { 
+            let u8, parsed;
+            u8 = new Uint8Array(buffer);
+            parsed = String.fromCharCode.apply(String, u8);
+            parsed = window.atob(parsed).split("*");
+            const newState = update(app.state, {
+                aws: {
+                    env: { 
+                        a: { $set: window.btoa(parsed[0]) },
+                        b: { $set: window.btoa(parsed[1]) },
+                        r: { $set: window.btoa("us-west-2") }
+                    }
+                },
+                start: {
+                    disabled: { $set: false }
+                }
+            });
+            app.setState(newState, () => {})
+        }).catch((error) => {
             console.error("\nApp.componentDidMount() - error:", error);
         });
-	}
-	
+    }
+    
     // Creates an Apollo client to access the GraphQL database.
     startApolloClient() {
         return new ApolloClient({
@@ -142,8 +142,8 @@ class App extends React.PureComponent {
     }
 
     // Saves the tuples to the GraphQL database. For the sake of experimentaton, the tuples are saved as an aggregated 
-	// text document: all of the tuples are joined into one large string / document entry in the graph. This has limited
-	// effect in this exercise, but it would be a useful strategy for saving multiple different tree searches as different graph nodes.
+    // text document: all of the tuples are joined into one large string / document entry in the graph. This has limited
+    // effect in this exercise, but it would be a useful strategy for saving multiple different tree searches as different graph nodes.
     __saveToGraphQL(tuples) {
         const client = this.state.apollo;
         return client.mutate({
@@ -166,119 +166,119 @@ class App extends React.PureComponent {
         });
     }
 
-	// Saves then retrieves the tuples to/from an AWS DynamoDB instance. The tuples are saved as individual table entries.
-	// This makes use of DynamoDB's batch transaction feature to limit the number of network requests.
-	__saveToDynamoDB(tuples) {                                                                                                       
-		const app = this;
-		
-		const env = Object.assign(this.state.aws.env);
-		AWS.config.update({
-			region: window.atob(env.r),
-			credentials: { 
-				accessKeyId: window.atob(env.a), 
-				secretAccessKey: window.atob(env.b)
-			},
-			paramValidation: false
-		});
-		const client = new AWS.DynamoDB.DocumentClient();
-		
-		wipe();
-		if (tuples.length > 25) {
-			for (let i = 0; i < tuples.length; i = i + 25) {
-				save(i); 
-			}
-		} else {
-			save(0);
-		}
-		scan();
-		return "AWS DynamoDB transactions completed";
-		
-		function wipe() {
-			let i, j, deletes;
-			for (i = 0; i < 300; i = i + 25) {
-				deletes = [];
-				for (j = i; j < 25; j++) {
-					deletes.push({
-						"DeleteRequest": {
-							"Key": {
-								"id": "" + j
-							}
-						}
-					});
-					client.batchWrite({
-						RequestItems: { "TupleList": deletes }
-					}, (error, result) => {
-						if (error) {
-							console.error("\nApp.__saveToDynamoDB() - DELETE error:", error);
-						} else {
-							// console.log("\nApp.__saveToDynamoDB() - DELETE success:", result);
-						}
-					});
-				}
-			}
-			console.log("\nApp.__saveToDynamoDB() - DELETE completed");
-		}
-		
-		function save(startIndex) {
-			let i, item, puts = [];
-			for (i = startIndex; i < startIndex + 25; i++) {
-				item = tuples[i];
-				if (!item) { break; }
-				puts.push({
-					"PutRequest": {
-						"Item": {
-							"id": "" + i,
-							"tuple": item.name + "***" + item.size
-						}
-					}
-				 });
-			}
-			client.batchWrite({
-				RequestItems: { "TupleList": puts }
-			}, (error, result) => {
-				if (error) {
-					console.error("\nApp.__saveToDynamoDB() - PUT error:", error);
-				} else {
-					console.log("\nApp.__saveToDynamoDB() - PUT success:", result);
-				}
-			});
-		}
-		
-		// Retrieves all saved tuples from DynamoDB;
-		function scan() {
-			client.scan({
-				TableName: "TupleList"
-			}, (error, result) => {
-				if (error) {
-					console.error("\nApp.__saveToDynamoDB() - GET error:", error);
-				} else {
-					let list = Array.from(app.state.aws.tuples);
-					const newState = update(app.state, {
-						aws: {
-							tuples: { $set: list.concat(result.Items) }
-						}
-					});
-					app.setState(newState, () => {
-						console.log("\nApp.__saveToDynamoDB() - GET success:", app.state);
-					});
-				}
-			});
-		}
-	}
+    // Saves then retrieves the tuples to/from an AWS DynamoDB instance. The tuples are saved as individual table entries.
+    // This makes use of DynamoDB's batch transaction feature to limit the number of network requests.
+    __saveToDynamoDB(tuples) {                                                                                                       
+        const app = this;
+        
+        const env = Object.assign(this.state.aws.env);
+        AWS.config.update({
+            region: window.atob(env.r),
+            credentials: { 
+                accessKeyId: window.atob(env.a), 
+                secretAccessKey: window.atob(env.b)
+            },
+            paramValidation: false
+        });
+        const client = new AWS.DynamoDB.DocumentClient();
+        
+        wipe();
+        if (tuples.length > 25) {
+            for (let i = 0; i < tuples.length; i = i + 25) {
+                save(i); 
+            }
+        } else {
+            save(0);
+        }
+        scan();
+        return "AWS DynamoDB transactions completed";
+        
+        function wipe() {
+            let i, j, deletes;
+            for (i = 0; i < 300; i = i + 25) {
+                deletes = [];
+                for (j = i; j < 25; j++) {
+                    deletes.push({
+                        "DeleteRequest": {
+                            "Key": {
+                                "id": "" + j
+                            }
+                        }
+                    });
+                    client.batchWrite({
+                        RequestItems: { "TupleList": deletes }
+                    }, (error, result) => {
+                        if (error) {
+                            console.error("\nApp.__saveToDynamoDB() - DELETE error:", error);
+                        } else {
+                            // console.log("\nApp.__saveToDynamoDB() - DELETE success:", result);
+                        }
+                    });
+                }
+            }
+            console.log("\nApp.__saveToDynamoDB() - DELETE completed");
+        }
+        
+        function save(startIndex) {
+            let i, item, puts = [];
+            for (i = startIndex; i < startIndex + 25; i++) {
+                item = tuples[i];
+                if (!item) { break; }
+                puts.push({
+                    "PutRequest": {
+                        "Item": {
+                            "id": "" + i,
+                            "tuple": item.name + "***" + item.size
+                        }
+                    }
+                 });
+            }
+            client.batchWrite({
+                RequestItems: { "TupleList": puts }
+            }, (error, result) => {
+                if (error) {
+                    console.error("\nApp.__saveToDynamoDB() - PUT error:", error);
+                } else {
+                    console.log("\nApp.__saveToDynamoDB() - PUT success:", result);
+                }
+            });
+        }
+        
+        // Retrieves all saved tuples from DynamoDB;
+        function scan() {
+            client.scan({
+                TableName: "TupleList"
+            }, (error, result) => {
+                if (error) {
+                    console.error("\nApp.__saveToDynamoDB() - GET error:", error);
+                } else {
+                    let list = Array.from(app.state.aws.tuples);
+                    const newState = update(app.state, {
+                        aws: {
+                            tuples: { $set: list.concat(result.Items) }
+                        }
+                    });
+                    app.setState(newState, () => {
+                        console.log("\nApp.__saveToDynamoDB() - GET success:", app.state);
+                    });
+                }
+            });
+        }
+    }
 
-	// Takes the AWS-formatted tuples and converts them back to their original format.
-	__assembleTuplesFromDynamoDB() {
-		let i, item, rawTuples = Array.from(this.state.aws.tuples), finalTuples = [];
-		for (i = 0; i < rawTuples.length; i++) {
-			item = Object.assign(rawTuples[i]).tuple.split("***");
-			finalTuples.push({
-				name: item[0],
-				size: item[1]
-			});
-		}
-		return finalTuples;
-	}
-	
+    // Takes the AWS-formatted tuples and converts them back to their original format.
+    __assembleTuplesFromDynamoDB() {
+        let i, item, rawTuples = Array.from(this.state.aws.tuples), finalTuples = [];
+        for (i = 0; i < rawTuples.length; i++) {
+            item = Object.assign(rawTuples[i]).tuple.split("***");
+            finalTuples.push({
+                name: item[0],
+                size: item[1]
+            });
+        }
+        return finalTuples;
+    }
+    
     // Creates the tuple names ("a > b > etc.") and image counts.
     __flatten(data) {
         var result = {};
@@ -290,16 +290,16 @@ class App extends React.PureComponent {
                 }
             } else if (Array.isArray(cur)) {
                 for (let i = 0; i < cur.length; i++) {
-					let ii;
-					if (i < 10) { 
-						ii = "000" + i;
-					} else if (i > 9 && i < 100) {
-						ii = "00" + i;
-					} else if (i > 99 && i < 1000) {
-						ii = "0" + i;
-					} else {
-						ii = i;
-					}
+                    let ii;
+                    if (i < 10) { 
+                        ii = "000" + i;
+                    } else if (i > 9 && i < 100) {
+                        ii = "00" + i;
+                    } else if (i > 99 && i < 1000) {
+                        ii = "0" + i;
+                    } else {
+                        ii = i;
+                    }
                     let modKey = prop + "[" + ii + "]";
                     if (list[prop.substring(0, modKey.length - 13)]) {
                         list[modKey] = list[prop.substring(0, modKey.length - 13)] + " > " + cur[i].words;
@@ -353,10 +353,10 @@ class App extends React.PureComponent {
             }
         )
         .then((result) => { 
-			return result.text();
-		}).then((xml) => {
-			return (new window.DOMParser()).parseFromString(xml, "text/xml");
-		}).then((xml) => {
+            return result.text();
+        }).then((xml) => {
+            return (new window.DOMParser()).parseFromString(xml, "text/xml");
+        }).then((xml) => {
             // console.log("\nApp.__scrape(" + id + ") - GET:", app.__xmlToJSON(xml));
             return app.__xmlToJSON(xml);
         }).catch((error) => {
@@ -393,13 +393,13 @@ class App extends React.PureComponent {
         if (xml.hasChildNodes()) {
             for (j = 0; j < xml.childNodes.length; j++) {
                 item = xml.childNodes.item(j);
-				o.synset.push(this.__xmlToJSON(item));
+                o.synset.push(this.__xmlToJSON(item));
             }
         }
         return o;
     }
 
-	// Used by __xmlToJSON(), above, to construct the tree object.
+    // Used by __xmlToJSON(), above, to construct the tree object.
     __construct(o) {
         let lut = {};
         function sort(a) {
@@ -415,10 +415,10 @@ class App extends React.PureComponent {
         let i, sorted = sort(o.slice(0));
         for (i = sorted.length - 1; i >= 0; i--) {
             if (sorted[i].pid !== "root") {
-				try {
-					(!!sorted[lut[sorted[i].pid]].children && sorted[lut[sorted[i].pid]].children.push(sorted.splice(i, 1)[0]))
-					|| (sorted[lut[sorted[i].pid]].children = [sorted.splice(i, 1)[0]]);
-				} catch(error) {}  
+                try {
+                    (!!sorted[lut[sorted[i].pid]].children && sorted[lut[sorted[i].pid]].children.push(sorted.splice(i, 1)[0]))
+                    || (sorted[lut[sorted[i].pid]].children = [sorted.splice(i, 1)[0]]);
+                } catch(error) {}  
             }
         }
         return JSON.parse(JSON.stringify(sorted, (k, v) => (k === "id" || k === "pid") ? undefined : v));
@@ -459,38 +459,38 @@ class App extends React.PureComponent {
         const tuples = Array.from(this.state.tuples);
         let newState, result;
 
-		// The "equals" search allows exact matching as well as single term / "OR" matching
-		// in the case of multiple search terms. The terms can be separated by spaces, ">" or commas.
+        // The "equals" search allows exact matching as well as single term / "OR" matching
+        // in the case of multiple search terms. The terms can be separated by spaces, ">" or commas.
         if (type === "equal") {
             result = tuples.filter(function(o) {
                 if (parseInt(newValue, 10)) {
                     return +o.size === +newValue;
                 } else {
-					newValue = newValue.replace(/\s\s+/g, " ");
-					if (o.name.indexOf(newValue) !== -1) {
-						return true;
-					}
-					let terms;
-					if (newValue.indexOf(">") !== -1) {
-						terms = newValue.split(">");
-					} else if (newValue.indexOf(",") !== -1) {
-						terms = newValue.split(",");
-					} else {
-						terms = newValue.split(" ");
-					}
-					for (let i = 0; i < terms.length; i++) {
-						if (o.name.indexOf(terms[i]) !== -1) {
-							return true;
-						}
-					}
-					return false;
+                    newValue = newValue.replace(/\s\s+/g, " ");
+                    if (o.name.indexOf(newValue) !== -1) {
+                        return true;
+                    }
+                    let terms;
+                    if (newValue.indexOf(">") !== -1) {
+                        terms = newValue.split(">");
+                    } else if (newValue.indexOf(",") !== -1) {
+                        terms = newValue.split(",");
+                    } else {
+                        terms = newValue.split(" ");
+                    }
+                    for (let i = 0; i < terms.length; i++) {
+                        if (o.name.indexOf(terms[i]) !== -1) {
+                            return true;
+                        }
+                    }
+                    return false;
                 }
             });
             if (result.length < 1) {
                 result = "No matching tuples!";
             } else if (newValue === "") {
-				result = Array.from(this.state.tree);
-			} else {
+                result = Array.from(this.state.tree);
+            } else {
                 result = this.__numericSortArray(result, "size");
             }
             newState = update(this.state, {
@@ -510,8 +510,8 @@ class App extends React.PureComponent {
             if (result.length < 1) {
                 result = "No matching tuples!";
             } else if (newValue === "") {
-				result = Array.from(this.state.tree);
-			} else {
+                result = Array.from(this.state.tree);
+            } else {
                 result = this.__numericSortArray(result, "size");
             }
             newState = update(this.state, {
@@ -531,8 +531,8 @@ class App extends React.PureComponent {
             if (result.length < 1) {
                 result = "No matching tuples!";
             } else if (newValue === "") {
-				result = Array.from(this.state.tree);
-			} else {
+                result = Array.from(this.state.tree);
+            } else {
                 result = this.__numericSortArray(result, "size");
             }
             newState = update(this.state, {
@@ -599,7 +599,7 @@ class App extends React.PureComponent {
         parsed = ("" + parsed).substring(0, 5);
         parsed = parseInt(parsed, 10);
         if (!parsed || parsed === "") {
-			parsed = "";
+            parsed = "";
             disabled = true;
         } else {
             disabled = false;
@@ -617,30 +617,30 @@ class App extends React.PureComponent {
         });
     }
 
-	// Reassemble the linear list of tuples back into an object tree, whuich then updates the DOM's display state.
-	__tuplesToTree(tuplesList, dbName) {
+    // Reassemble the linear list of tuples back into an object tree, whuich then updates the DOM's display state.
+    __tuplesToTree(tuplesList, dbName) {
         const newTree = this.__reassembleTree(tuplesList);
         const newState = update(this.state, {
-			search: {
-				disabled: { $set: false },
-				equal: { $set: "" },
-				greater: { $set: "" },
-				lesser: { $set: "" },
-				result: { $set: [] }
-			},
+            search: {
+                disabled: { $set: false },
+                equal: { $set: "" },
+                greater: { $set: "" },
+                lesser: { $set: "" },
+                result: { $set: [] }
+            },
             tree: { $set: newTree },
             tuples: { $set: tuplesList }
         });
         this.setState(newState, () => {
-			this.__displayJSON(newTree);
+            this.__displayJSON(newTree);
             console.log("\nApp." + dbName + "() - updated app state:", this.state);
         });
-	}
-	
-	// Runs the dynamoDB sequence.
+    }
+    
+    // Runs the dynamoDB sequence.
     runDynamoDB() {
-		console.log("\n----- AWS DynamoDB -----");
-		
+        console.log("\n----- AWS DynamoDB -----");
+        
         new Promise((resolve, reject) => {
             resolve(this.__scrape(this.state.search.baseID));
         }).then((data) => {
@@ -649,19 +649,19 @@ class App extends React.PureComponent {
             window.setTimeout(() => {
 
                 // Create the list of tuples in the [{ name: __, size: __ }] format.
-				let flattened = this.__flatten(data);
+                let flattened = this.__flatten(data);
                 let tuples = this.__merge(flattened);
                 console.log("\nApp.runDynamoDB() - scraped tuples:", tuples);
-				
-				new Promise((resolve, reject) => {
-					resolve(this.__saveToDynamoDB(tuples));
+                
+                new Promise((resolve, reject) => {
+                    resolve(this.__saveToDynamoDB(tuples));
                 }).then((status) => {
-					window.setTimeout(() => {
-						console.log("\nApp.runDynamoDB() - updated status:", status);
-						this.__tuplesToTree(this.__assembleTuplesFromDynamoDB(), "DynamoDB");
-					}, (Math.floor(tuples.length / 25) + 1) * 500);
-				});
-				
+                    window.setTimeout(() => {
+                        console.log("\nApp.runDynamoDB() - updated status:", status);
+                        this.__tuplesToTree(this.__assembleTuplesFromDynamoDB(), "DynamoDB");
+                    }, (Math.floor(tuples.length / 25) + 1) * 500);
+                });
+                
             }, 1000);
         }).catch((error) => {
             console.error("\nApp.runDynamoDB() - error:", error);
@@ -670,7 +670,7 @@ class App extends React.PureComponent {
 
     // Runs the GraphQL sequence.
     runGraphQL() {
-		console.log("\n----- GraphQL -----");
+        console.log("\n----- GraphQL -----");
         new Promise((resolve, reject) => {
             resolve(this.__scrape(this.state.search.baseID));
         }).then((data) => {
@@ -687,33 +687,33 @@ class App extends React.PureComponent {
                 // Doing so would create an unnecessary performance hit. Note that GraphQL returns the saved list as well.
                 // There is no need for a second retrieval action in this exercise, since the tuples list will not change.
                 new Promise((resolve, reject) => {
-					resolve(this.__saveToGraphQL(tuples))
+                    resolve(this.__saveToGraphQL(tuples))
                 }).then((result) => {
                     console.log("\nApp.runGraphQL() - data saved to / returned from GraphQL:", result);
-					this.__tuplesToTree(JSON.parse(result.data.createTree.list), "GraphQL");
+                    this.__tuplesToTree(JSON.parse(result.data.createTree.list), "GraphQL");
                 }).catch((error) => {
                     console.error("\nApp.runGraphQL() - error:", error);
                 });
             }, 1000);
         }).catch((error) => {
-			console.error("\nApp.runGraphQL() - error:", error);
+            console.error("\nApp.runGraphQL() - error:", error);
         });
     }
 
-	// Renders the DOM.
+    // Renders the DOM.
     render() {
         return (
             <div id="content">
 
                 <div className="row">
                     <h2 className="centered">{"Tuples & Trees"}</h2>
-					<h4 className="centered"><em>{"GraphQL via Apollo.js, DynamoDB via the AWS Web SDK, and React.js"}</em></h4>
-					<ul className="list">
-						<li>{"This example is best viewed in the latest version of Chrome. Before starting, please open the developer console to view run time logs."}</li>
-						<li>{"Choose between two databases: a "}<a href="http://graphql.org/" target="_blank" title="Go to graphql.org?">{"GraphQL"}</a>{" graph hosted on "}<a href="https://www.graph.cool/" target="_blank" title="Go to graph.cool?">{"GraphCool"}</a>{" and accessed via an "}<a href="http://dev.apollodata.com/" target="_blank" title="View the Apollo.js website?">{"Apollo.js"}</a>{" browser client, or an "}<a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html" target="_blank" title="Go to the AWS DynamoDB documentation?">{"AWS DynamoDB"}</a>{" table accessed via the "}<a href="https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/welcome.html" target="_blank" title="View the AWS Web SDK documentation?">{"AWS Web SDK"}</a>{"."}</li>
-						<li>{"The code for each will scrape the "}<a href="http://imagenet.stanford.edu/synset?wnid=n02486410" target="_blank" title="Go to the Stanford Image Library?">{"Stanford Image Library"}</a>{" for XML nodes, assemble tuples from the scraped XML, store the tuples to the selected database, retrieve them, then assemble and display an object tree."}</li>
-						<li>{"Use the search fields below to search for specific tuples. To rerun starting from a different image library root node, enter up to 5 numeric digits in the Root Node ID field, then reselect a database. The base ID for the entire tree is 82127."}</li>
-					</ul>
+                    <h4 className="centered"><em>{"GraphQL via Apollo.js, DynamoDB via the AWS Web SDK, and React.js"}</em></h4>
+                    <ul className="list">
+                        <li>{"This example is best viewed in the latest version of Chrome. Before starting, please open the developer console to view run time logs."}</li>
+                        <li>{"Choose between two databases: a "}<a href="http://graphql.org/" target="_blank" title="Go to graphql.org?">{"GraphQL"}</a>{" graph hosted on "}<a href="https://www.graph.cool/" target="_blank" title="Go to graph.cool?">{"GraphCool"}</a>{" and accessed via an "}<a href="http://dev.apollodata.com/" target="_blank" title="View the Apollo.js website?">{"Apollo.js"}</a>{" browser client, or an "}<a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html" target="_blank" title="Go to the AWS DynamoDB documentation?">{"AWS DynamoDB"}</a>{" table accessed via the "}<a href="https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/welcome.html" target="_blank" title="View the AWS Web SDK documentation?">{"AWS Web SDK"}</a>{"."}</li>
+                        <li>{"The code for each will scrape the "}<a href="http://imagenet.stanford.edu/synset?wnid=n02486410" target="_blank" title="Go to the Stanford Image Library?">{"Stanford Image Library"}</a>{" for XML nodes, assemble tuples from the scraped XML, store the tuples to the selected database, retrieve them, then assemble and display an object tree."}</li>
+                        <li>{"Use the search fields below to search for specific tuples. To rerun starting from a different image library root node, enter up to 5 numeric digits in the Root Node ID field, then reselect a database. The base ID for the entire tree is 82127."}</li>
+                    </ul>
                 </div>
 
                 <div className="row centered">
@@ -723,23 +723,23 @@ class App extends React.PureComponent {
                             disabled={this.state.start.disabled}
                             label={"GraphQL"}
                             primary={true}
-							style={this.state.style.graphQL}
-							labelStyle={this.state.style.buttons}
+                            style={this.state.style.graphQL}
+                            labelStyle={this.state.style.buttons}
                             onClick={this.runGraphQL}
                         />
                     </MuiThemeProvider>
 
-					<MuiThemeProvider muiTheme={muiTheme}>
+                    <MuiThemeProvider muiTheme={muiTheme}>
                         <RaisedButton
                             disabled={this.state.start.disabled}
                             label={"DynamoDB"}
                             primary={true}
-							style={this.state.style.dynamoDB}
-							labelStyle={this.state.style.buttons}
+                            style={this.state.style.dynamoDB}
+                            labelStyle={this.state.style.buttons}
                             onClick={this.runDynamoDB}
                         />
                     </MuiThemeProvider>
-					
+                    
                 </div>
 
                 <div className="row">
