@@ -38,7 +38,7 @@ import RaisedButton from "material-ui/RaisedButton";
 import TextField from "material-ui/TextField";
 
 import { Querystring } from "request/lib/querystring.js";
-Querystring.prototype.unescape = function(val) { return val; };
+Querystring.prototype.unescape = function(val) { return encodeURIComponent(val); };
 
 class App extends React.PureComponent {
 
@@ -135,7 +135,7 @@ class App extends React.PureComponent {
     }
 	
 	__saveToGrapheneDB(tuples) {
-		const db = new neo4j.GraphDatabase("https://cors-anywhere.herokuapp.com/http://app67579763-cJSBuJ:b.9G7fygPTCGs1.Kfz6RfH8ZvkK9IkE@hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24789");
+		const db = new neo4j.GraphDatabase("https://app67579763-cJSBuJ:b.9G7fygPTCGs1.Kfz6RfH8ZvkK9IkE@hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24789");
 		db.cypher({
 			query: 'CREATE (n:Person {name: {personName}}) RETURN n',
 			params: {
