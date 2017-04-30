@@ -10,9 +10,12 @@ import "es6-promise/auto";
 // GraphQL browser client.
 import { ApolloClient, createNetworkInterface, gql } from "react-apollo";
 
-// Neo4J / GrapheneDB driver.
-import neo4j from "../node_modules/neo4j-driver/lib/browser/neo4j-web.min.js";
-import v1 from "../node_modules/neo4j-driver/lib/browser/neo4j-web.min.js";
+// AWS SDK.
+import AWS from "aws-sdk";
+
+// Work around for deprecated Node function used by several dependencies.
+import { Querystring } from "request/lib/querystring.js";
+Querystring.prototype.unescape = function(val) { return encodeURIComponent(val); };
 
 // Needed for onTouchTap.
 // http://stackoverflow.com/a/34015469/988941
@@ -36,9 +39,6 @@ const muiTheme = getMuiTheme({
 // Material UI components.
 import RaisedButton from "material-ui/RaisedButton";
 import TextField from "material-ui/TextField";
-
-import { Querystring } from "request/lib/querystring.js";
-Querystring.prototype.unescape = function(val) { return encodeURIComponent(val); };
 
 class App extends React.PureComponent {
 
@@ -94,7 +94,7 @@ class App extends React.PureComponent {
         };
 
 		// Binds the DOM event functions to the DOM components.
-		this.runGrapheneDB = this.runGrapheneDB.bind(this);
+		this.runDynamoDB = this.runDynamoDB.bind(this);
         this.runGraphQL = this.runGraphQL.bind(this);
         this.search = this.search.bind(this);
         this.setID = this.setID.bind(this);
@@ -134,22 +134,9 @@ class App extends React.PureComponent {
         });
     }
 	
-	__saveToGrapheneDB(tuples) {                                                                                                       
+	__saveToDynamoDB(tuples) {                                                                                                       
 
-		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.9G7fygPTCGs1.Kfz6RfH8ZvkK9IkE"));
-			
-		driver.onError = (error) => {
-			console.log("\n", error);
-		};
 		
-		let session = driver.session();
-		return session.run("MERGE (n:Tuple {name: {nameParam}}) RETURN n", { nameParam:'Alice' })
-					.then((result) => {
-						console.log("\nApp.__saveToGrapheneDB() - save node success:", result);
-						session.close();
-					}).catch((error) => {
-						console.log("\nApp.__saveToGrapheneDB() - save node error:", error);
-					});
 	
 	}
 
@@ -456,7 +443,7 @@ class App extends React.PureComponent {
     }
 
 	// Runs the GrapheneDB sequence.
-    runGrapheneDB() {
+    runDynamoDB() {
 		console.log("\n----- Neo4J / GrapheneDB -----");
 		
         new Promise((resolve, reject) => {
@@ -468,17 +455,17 @@ class App extends React.PureComponent {
 
                 // Create the list of tuples in the [{ name: __, size: __ }] format.
                 let tuples = this.__merge(this.__flatten(data));
-                console.log("\nApp.runGrapheneDB() - scraped tuples:", tuples);
+                console.log("\nApp.runDynamoDB() - scraped tuples:", tuples);
 
                 // Save the tuples to GrapheneDB.
                 new Promise((resolve, reject) => {
-					resolve(this.__saveToGrapheneDB(tuples))
+					resolve(this.__saveToDynamoDB(tuples))
                 }).then((results) => {
 					
-					console.log("\nApp.runGrapheneDB() - data saved to / returned from GrapheneDB:", results);
+					console.log("\nApp.runDynamoDB() - data saved to / returned from DynamoDB:", results);
 				
                 }).catch((error) => {
-                    console.log("\nApp.runGrapheneDB() - error:", error);
+                    console.log("\nApp.runDynamoDB() - error:", error);
                 });
 
             }, 1000);
@@ -544,7 +531,7 @@ class App extends React.PureComponent {
 					<h4 className="centered"><em>{"GraphQL with Apollo.js, Neo4J / GrapheneDB with Bolt, and React.js"}</em></h4>
 					<ul className="list">
 						<li>{"This example is best viewed in the latest version of Chrome. Before starting, please open the developer console to view run time logs."}</li>
-						<li>{"Choose between two databases: "}<a href="http://graphql.org/" target="_blank" title="Go to graphql.org?">{"GraphQL"}</a>{" hosted on "}<a href="https://www.graph.cool/" target="_blank" title="Go to graph.cool?">{"GraphCool"}</a>{" and accessed via an "}<a href="http://dev.apollodata.com/" target="_blank" title="View the Apollo.js website?">{"Apollo.js"}</a>{" browser client, or "}<a href="https://www.graphenedb.com/" target="_blank" title="Go to GrapheneDB.com?">{"Neo4J / GrapheneDB"}</a>{" hosted on "}<a href="https://www.heroku.com/" target="_blank" title="Go to heroku.com?">{"Heroku"}</a>{", accessed via a "}<a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSocket" target="_blank" title="Go to the MDN reference page for WebSockets?">{"WebSocket"}</a>{" using the "}<a href="http://boltprotocol.org/v1/" target="_blank" title="View the Bolt protocol website?">{"Bolt protocol"}</a>{"."}</li>
+						<li>{"Choose between two databases: "}<a href="http://graphql.org/" target="_blank" title="Go to graphql.org?">{"GraphQL"}</a>{" hosted on "}<a href="https://www.graph.cool/" target="_blank" title="Go to graph.cool?">{"GraphCool"}</a>{" and accessed via an "}<a href="http://dev.apollodata.com/" target="_blank" title="View the Apollo.js website?">{"Apollo.js"}</a>{" browser client, or ."}</li>
 						<li>{"The code for each will scrape the "}<a href="http://imagenet.stanford.edu/synset?wnid=n02486410" target="_blank" title="Go to the Stanford Image Library?">{"Stanford Image Library"}</a>{" for XML nodes, assemble tuples from the scraped XML, store the tuples to the selected database, retrieve them, then assemble and display an object tree."}</li>
 						<li>{"Use the search fields below to search for specific tuples. To rerun starting from a different image library root node, enter up to 5 numeric digits in the Root Node ID field, then reselect a database. The base ID for the entire tree is 82127."}</li>
 					</ul>
@@ -559,7 +546,7 @@ class App extends React.PureComponent {
                             primary={true}
 							style={this.state.style.grapheneDB}
 							labelStyle={this.state.style.buttons}
-                            onClick={this.runGrapheneDB}
+                            onClick={this.runDynamoDB}
                         />
                     </MuiThemeProvider>
 					
