@@ -11,8 +11,8 @@ import "es6-promise/auto";
 import { ApolloClient, createNetworkInterface, gql } from "react-apollo";
 
 // Neo4J / GrapheneDB driver.
-// import { v1 } from "../node_modules/neo4j-driver/lib/browser/neo4j-web.min.js";
-import neo4j from "neo4j";
+import neo4j from "../node_modules/neo4j-driver/lib/browser/neo4j-web.min.js";
+import v1 from "../node_modules/neo4j-driver/lib/browser/neo4j-web.min.js";
 
 // Needed for onTouchTap.
 // http://stackoverflow.com/a/34015469/988941
@@ -134,21 +134,23 @@ class App extends React.PureComponent {
         });
     }
 	
-	__saveToGrapheneDB(tuples) {
-		const db = new neo4j.GraphDatabase("https://app67579763-cJSBuJ:b.9G7fygPTCGs1.Kfz6RfH8ZvkK9IkE@hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24789");
-		db.cypher({
-			query: 'CREATE (n:Person {name: {personName}}) RETURN n',
-			params: {
-				personName: 'Bob'
-			}
-		}, function(err, results){
-			if (err) {
-				console.error('Error saving new node to database:', err);
-			} else {
-				console.log('Node saved to database with id:', results);
-				return results;
-			}
-		});
+	__saveToGrapheneDB(tuples) {                                                                                                       
+
+		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.9G7fygPTCGs1.Kfz6RfH8ZvkK9IkE"), { encrypted: "ENCRYPTION_ON" });
+			
+		driver.onError = (error) => {
+			console.log("\n", error);
+		};
+		
+		let session = driver.session();
+		return session.run("MERGE (n:Tuple {name: {nameParam}}) RETURN n", { nameParam:'Alice' })
+					.then((result) => {
+						console.log("\nApp.__saveToGrapheneDB() - save node success:", result);
+						session.close();
+					}).catch((error) => {
+						console.log("\nApp.__saveToGrapheneDB() - save node error:", error);
+					});
+	
 	}
 
     // Creates the tuple names ("a > b > etc.") and image counts.
