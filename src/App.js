@@ -244,7 +244,7 @@ class App extends React.PureComponent {
             });
         }
         
-        // Retrieves all saved tuples from DynamoDB;
+        // Retrieves all saved tuples from DynamoDB in a batch transaction.
         function scan() {
             client.scan({
                 TableName: "TupleList"
