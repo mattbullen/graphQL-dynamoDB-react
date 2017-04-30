@@ -131,7 +131,7 @@ class App extends React.PureComponent {
     }
 	
 	// Saves the tuples to GrapheneDB, then queries the database for all tuples.
-	__saveToGrapheneDB(tuples) {                                                                                                       
+	__saveToGrapheneDB11111(tuples) {                                                                                                       
 
 		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.gzSnhpXDE9Ya.9IDrhljzYqFLE9F0"), { encrypted: "ENCRYPTION_ON" });
 			
@@ -140,7 +140,7 @@ class App extends React.PureComponent {
 		};
 			
 		return driver.onCompleted = (() => {
-			console.log("App.__saveToGrapheneDB() - driver instantiation succeeded.");
+			console.log("\nApp.__saveToGrapheneDB() - driver instantiation succeeded.");
 			
 			let session = driver.session();
 			session.run("MATCH (n) DETACH DELETE n")
@@ -177,6 +177,36 @@ class App extends React.PureComponent {
 				});
 			
 		})();		
+	}
+	
+	__saveToGrapheneDB(tuples) {                                                                                                       
+
+		return fetch(
+            "https://cors-anywhere.herokuapp.com/http://app67579763-cJSBuJ:b.gzSnhpXDE9Ya.9IDrhljzYqFLE9F0@hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24789",
+            {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+					"Authorization": "Basic YXBwNjc1Nzk3NjMtY0pTQnVKOmIuZ3pTbmhwWERFOVlhLjlJRHJobGp6WXFGTEU5RjA=",
+                    "Content-Type": "application/json; charset=UTF-8"
+                },
+                mode: "cors",
+				data: {
+					"statements" : [
+						{ "statement" : "CREATE (n:Tuple { name: 'AAA', size: '111' }) RETURN n" },
+						{ "statement" : "MATCH (n) RETURN n" },
+					],
+					"resultDataContents" : [ "row", "graph" ]
+				}
+            }
+        )
+        .then((result) => {
+            console.log("\nApp.__saveToGrapheneDB() - success:", result);
+			return result;
+        })
+        .catch((error) => {
+            console.log("\nApp.__saveToGrapheneDB() - error:", error);
+        });
 	}
 
     // Creates the tuple names ("a > b > etc.") and image counts.
