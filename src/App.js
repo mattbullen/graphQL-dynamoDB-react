@@ -131,7 +131,7 @@ class App extends React.PureComponent {
     }
 	
 	// Saves the tuples to GrapheneDB, then queries the database for all tuples.
-	__saveToGrapheneDB11111(tuples) {                                                                                                       
+	__saveToGrapheneDB(tuples) {                                                                                                       
 
 		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.gzSnhpXDE9Ya.9IDrhljzYqFLE9F0"), { encrypted: "ENCRYPTION_ON" });
 			
@@ -143,13 +143,6 @@ class App extends React.PureComponent {
 			console.log("\nApp.__saveToGrapheneDB() - driver instantiation succeeded.");
 			
 			let session = driver.session();
-			session.run("MATCH (n) DETACH DELETE n")
-				.then((result) => {
-					console.log("\nApp.__saveToGrapheneDB() - clear prior nodes success:", result);
-					session.close();
-				}).catch((error) => {
-					console.log("\nApp.__saveToGrapheneDB() - clear prior nodes error:", error);
-				});
 				
 				let i, item;
 				for (i = 0; i < tuples.length; i++) {
@@ -157,7 +150,7 @@ class App extends React.PureComponent {
 					session.run("CREATE (n:Tree {name:" + item.name + ", size:" + item.size + "}) RETURN n")
 					.then((result) => {
 						console.log("\nApp.__saveToGrapheneDB() - save node success:", result);
-						session.close();
+						// session.close();
 					}).catch((error) => {
 						console.log("\nApp.__saveToGrapheneDB() - save node error:", error);
 					});
@@ -179,29 +172,33 @@ class App extends React.PureComponent {
 		})();		
 	}
 	
-	__saveToGrapheneDB(tuples) {                                                                                                       
+	// "Accept": "application/json",
+	// https://cors-anywhere.herokuapp.com/
+	// app67579763-cJSBuJ:b.gzSnhpXDE9Ya.9IDrhljzYqFLE9F0@hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24789
+	__saveToGrapheneDB365635(tuples) {                                                                                                       
 
 		return fetch(
-            "https://cors-anywhere.herokuapp.com/http://app67579763-cJSBuJ:b.gzSnhpXDE9Ya.9IDrhljzYqFLE9F0@hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24789",
+            "https://cors-anywhere.herokuapp.com/http://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24789/db/data/",
             {
                 method: "POST",
                 headers: {
-                    "Accept": "application/json",
 					"Authorization": "Basic YXBwNjc1Nzk3NjMtY0pTQnVKOmIuZ3pTbmhwWERFOVlhLjlJRHJobGp6WXFGTEU5RjA=",
                     "Content-Type": "application/json; charset=UTF-8"
                 },
-                mode: "cors",
 				data: {
-					"statements" : [
-						{ "statement" : "CREATE (n:Tuple { name: 'AAA', size: '111' }) RETURN n" },
-						{ "statement" : "MATCH (n) RETURN n" },
-					],
-					"resultDataContents" : [ "row", "graph" ]
+					"query": "CREATE (n:Tuple { props }) RETURN n",
+					"params": {
+						"props" : {
+							"name" : "ABC",
+							"size" : "111"
+						}
+					}
+					
 				}
             }
         )
         .then((result) => {
-            console.log("\nApp.__saveToGrapheneDB() - success:", result);
+            console.log("\nApp.__saveToGrapheneDB() - success:", result.json());
 			return result;
         })
         .catch((error) => {
@@ -514,6 +511,7 @@ class App extends React.PureComponent {
 	// Runs the GrapheneDB sequence.
     runGrapheneDB() {
 		console.log("\n----- Neo4J / GrapheneDB -----");
+		
         new Promise((resolve, reject) => {
             resolve(this.__scrape(this.state.search.baseID));
         }).then((data) => {
@@ -530,8 +528,17 @@ class App extends React.PureComponent {
 					resolve(this.__saveToGrapheneDB(tuples))
                 }).then((results) => {
 					
-					console.log("\nApp.runGrapheneDB() - data saved to / returned from GrapheneDB:", results);
-                    
+					new Promise((resolve, reject) => {
+						return resolve(results);
+					}).then((results) => {
+						window.setTimeout(() => {
+							console.log("\nApp.runGrapheneDB() - data saved to / returned from GrapheneDB:", results);
+						}, 2000);
+						
+					}).catch((error) => {
+						console.log("\nApp.runGrapheneDB() - error:", error);
+					});
+				
                 }).catch((error) => {
                     console.log("\nApp.runGrapheneDB() - error:", error);
                 });
