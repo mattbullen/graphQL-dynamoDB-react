@@ -136,7 +136,10 @@ class App extends React.PureComponent {
 	
 	__saveToGrapheneDB(tuples) {                                                                                                       
 
-		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.9G7fygPTCGs1.Kfz6RfH8ZvkK9IkE"), { encrypted: "ENCRYPTION_ON" });
+		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.9G7fygPTCGs1.Kfz6RfH8ZvkK9IkE"), { 
+			encrypted: "ENCRYPTION_ON", 
+			trust: "TRUST_CUSTOM_CA_SIGNED_CERTIFICATES" 
+		});
 			
 		driver.onError = (error) => {
 			console.log("\n", error);
