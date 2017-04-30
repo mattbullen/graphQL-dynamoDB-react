@@ -11,7 +11,8 @@ import "es6-promise/auto";
 import { ApolloClient, createNetworkInterface, gql } from "react-apollo";
 
 // Neo4J / GrapheneDB driver.
-import { v1 } from "../node_modules/neo4j-driver/lib/browser/neo4j-web.min.js";
+// import { v1 } from "../node_modules/neo4j-driver/lib/browser/neo4j-web.min.js";
+import neo4j from "neo4j";
 
 // Needed for onTouchTap.
 // http://stackoverflow.com/a/34015469/988941
@@ -35,6 +36,9 @@ const muiTheme = getMuiTheme({
 // Material UI components.
 import RaisedButton from "material-ui/RaisedButton";
 import TextField from "material-ui/TextField";
+
+import { Querystring } from "request/lib/querystring.js";
+Querystring.prototype.unescape = function(val) { return val; };
 
 class App extends React.PureComponent {
 
@@ -130,77 +134,21 @@ class App extends React.PureComponent {
         });
     }
 	
-	// Saves the tuples to GrapheneDB, then queries the database for all tuples.
-	__saveToGrapheneDB(tuples) {                                                                                                       
-
-		const driver = v1.driver("bolt://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24786", v1.auth.basic("app67579763-cJSBuJ", "b.9G7fygPTCGs1.Kfz6RfH8ZvkK9IkE"), { encrypted: "ENCRYPTION_ON" });
-			
-		driver.onError = (error) => {
-			console.log("\n", error);
-		};
-			
-		return driver.onCompleted = (() => {
-			console.log("\nApp.__saveToGrapheneDB() - driver instantiation succeeded.");
-			let session = driver.session();
-				
-				let i, item;
-				for (i = 0; i < tuples.length; i++) {
-					item = tuples[i];
-					session.run("MERGE (n:Tuple {name: {nameParam}}) RETURN n", { nameParam:'Alice' })
-					.then((result) => {
-						console.log("\nApp.__saveToGrapheneDB() - save node success:", result);
-						session.close();
-					}).catch((error) => {
-						console.log("\nApp.__saveToGrapheneDB() - save node error:", error);
-					});
-				}
-				
-				session.run("MATCH (n:Tuple) RETURN n")
-				.then((result) => {
-					console.log("\nApp.__saveToGrapheneDB() - retrieve all nodes success:", result);
-					session.close();
-					return result;
-				}).catch((error) => {
-					console.log("\nApp.__saveToGrapheneDB() - retrieve all nodes error:", error);
-					session.close();
-					return error;
-				});		
-		})();
-	
-	}
-	
-	// "Accept": "application/json",
-	// https://cors-anywhere.herokuapp.com/
-	// app67579763-cJSBuJ:b.gzSnhpXDE9Ya.9IDrhljzYqFLE9F0@hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24789
-	__saveToGrapheneDB365635(tuples) {                                                                                                       
-
-		return fetch(
-            "https://cors-anywhere.herokuapp.com/http://hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24789/db/data/",
-            {
-                method: "POST",
-                headers: {
-					"Authorization": "Basic YXBwNjc1Nzk3NjMtY0pTQnVKOmIuZ3pTbmhwWERFOVlhLjlJRHJobGp6WXFGTEU5RjA=",
-                    "Content-Type": "application/json; charset=UTF-8"
-                },
-				data: {
-					"query": "CREATE (n:Tuple { props }) RETURN n",
-					"params": {
-						"props" : {
-							"name" : "ABC",
-							"size" : "111"
-						}
-					}
-					
-				}
-            }
-        )
-        .then((result) => {
-            console.log("\nApp.__saveToGrapheneDB() - success:", result.json());
-			return result;
-        })
-        .catch((error) => {
-            console.log("\nApp.__saveToGrapheneDB() - error:", error);
-        });
+	__saveToGrapheneDB(tuples) {
+		const db = new neo4j.GraphDatabase("http://app67579763-cJSBuJ:b.9G7fygPTCGs1.Kfz6RfH8ZvkK9IkE@hobby-fldndcgfojekgbkelnpglgpl.dbs.graphenedb.com:24789");
+		db.cypher({
+			query: 'CREATE (n:Person {name: {personName}}) RETURN n',
+			params: {
+				personName: 'Bob'
+			}
+		}, function(err, results){
+			if (err) {
+				console.error('Error saving new node to database:', err);
+			} else {
+				console.log('Node saved to database with id:', results);
+				return results;
+			}
+		});
 	}
 
     // Creates the tuple names ("a > b > etc.") and image counts.
@@ -525,16 +473,7 @@ class App extends React.PureComponent {
 					resolve(this.__saveToGrapheneDB(tuples))
                 }).then((results) => {
 					
-					new Promise((resolve, reject) => {
-						return resolve(results);
-					}).then((results) => {
-						window.setTimeout(() => {
-							console.log("\nApp.runGrapheneDB() - data saved to / returned from GrapheneDB:", results);
-						}, 2000);
-						
-					}).catch((error) => {
-						console.log("\nApp.runGrapheneDB() - error:", error);
-					});
+					console.log("\nApp.runGrapheneDB() - data saved to / returned from GrapheneDB:", results);
 				
                 }).catch((error) => {
                     console.log("\nApp.runGrapheneDB() - error:", error);
