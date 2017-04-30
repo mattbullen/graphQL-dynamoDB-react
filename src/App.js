@@ -117,9 +117,9 @@ class App extends React.PureComponent {
 			const newState = update(app.state, {
 				aws: {
 					env: { 
-						a: { $set: parsed[0] },
-						b: { $set: parsed[1] },
-						r: { $set: "us-west-2" }
+						a: { $set: window.btoa(parsed[0]) },
+						b: { $set: window.btoa(parsed[1]) },
+						r: { $set: window.btoa("us-west-2") }
 					}
 				},
 				start: {
@@ -173,10 +173,10 @@ class App extends React.PureComponent {
 		
 		const env = Object.assign(this.state.aws.env);
 		AWS.config.update({
-			region: env.r,
+			region: window.atob(env.r),
 			credentials: { 
-				accessKeyId: env.a, 
-				secretAccessKey: env.b
+				accessKeyId: window.atob(env.a), 
+				secretAccessKey: window.atob(env.b)
 			},
 			paramValidation: false
 		});
