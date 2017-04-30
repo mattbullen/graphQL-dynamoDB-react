@@ -474,7 +474,7 @@ class App extends React.PureComponent {
 					resolve(this.__saveToGrapheneDB(tuples))
                 }).then((result) => {
 					
-                    console.log("\nApp.runGrapheneDB() - data saved to / returned from GrapheneDB:", result.json());
+                    console.log("\nApp.runGrapheneDB() - data saved to / returned from GrapheneDB:", result);
 					
                 }).catch((error) => {
                     console.log("\nApp.runGrapheneDB() - error:", error);
@@ -543,8 +543,8 @@ class App extends React.PureComponent {
 					<h4 className="centered"><em>{"GraphQL with Apollo.js, Neo4J / GrapheneDB with Bolt, and React.js"}</em></h4>
 					<ul className="list">
 						<li>{"This example is best viewed in the latest version of Chrome. Before starting, please open the developer console to view run time logs."}</li>
-						<li>{"Choose between two databases: GraphQL accessed via an Apollo.js browser client, or Neo4J / GrapheneDB running on Heroku, accessed via a websocket and the Bolt protocol."}</li>
-						<li>{"The code for each will scrape the Stanford image library for raw XML nodes, assemble tuples from the scraped XML, store the tuples to the selected database, retrieve them, then assemble and display an object tree."}</li>
+						<li>{"Choose between two databases: "}<a href="http://graphql.org/" title="Go to graphql.org?">{"GraphQL"}</a>{" hosted on "}<a href="https://www.graph.cool/" title="Go to graph.cool?">{"GraphCool"}</a>{" and accessed via an "}<a href="http://dev.apollodata.com/" title="View the Apollo.js website?">{"Apollo.js"}</a>{" browser client, or "}<a href="https://www.graphenedb.com/" title="Go to GrapheneDB.com?">{"Neo4J / GrapheneDB"}</a>{" hosted on "}<a href="https://www.heroku.com/" title="Go to heroku.com?">{"Heroku"}</a>{", accessed via a "}<a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSocket" title="Go to the MDN reference page for WebSockets?">{"WebSocket"}</a>{" using the "}<a href="http://boltprotocol.org/v1/" title="View the Bolt protocol website?">{"Bolt protocol"}</a>{"."}</li>
+						<li>{"The code for each will scrape the "}<a href="http://imagenet.stanford.edu/synset?wnid=n02486410" title="Go to the Stanford Image Library?">{"Stanford Image Library"}</a>{" for XML nodes, assemble tuples from the scraped XML, store the tuples to the selected database, retrieve them, then assemble and display an object tree."}</li>
 						<li>{"Use the search fields below to insta-search for specific tuples. Please note that the search fields will remain disabled until all database transactions have completed."}</li>
 						<li>{"To rerun starting from a different image library root node, enter up to 5 numeric digits in the Root Node ID field below, then reselect a database. The base ID for the entire tree is 82127."}</li>
 					</ul>
