@@ -797,7 +797,7 @@ class App extends React.PureComponent {
                             value={this.state.search.equal}
                             type={"text"}
                             fullWidth={false}
-                            floatingLabelText={"Size or Name Equals (String or Int)"}
+                            floatingLabelText={"Size or Name Equals (Int or String)"}
                             floatingLabelFocusStyle={this.state.style.color}
                             underlineFocusStyle={this.state.style.color}
                             style={this.state.style.last}
