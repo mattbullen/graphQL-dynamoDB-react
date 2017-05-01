@@ -14,7 +14,7 @@ import { ApolloClient, createNetworkInterface, gql } from "react-apollo";
 import AWS from "aws-sdk";
 
 // Work around for deprecated Node function used by several dependencies.
-import Querystring from "request/lib/querystring.js";
+import { Querystring } from "request/lib/querystring.js";
 Querystring.prototype.unescape = function(value) { return window.encodeURIComponent(value); };
 
 // Needed for onTouchTap.
