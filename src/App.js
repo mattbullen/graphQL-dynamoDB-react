@@ -105,7 +105,8 @@ class App extends React.PureComponent {
     }
     
     // Sets the AWS environment variables. This isn't a standard approach. I wanted to see
-    // if it could be done this way (seems to work fine).
+    // if it could be done this way (seems to work fine). A production approach would be to use
+    // one of AWS's user management frameworks, such as Federated Identities.
     componentDidMount() {
         const app = this;
         fetch("https://cors-anywhere.herokuapp.com/http://www.matthewbullen.net/misc/string.php")
@@ -146,9 +147,9 @@ class App extends React.PureComponent {
         });
     }
 
-    // Saves the tuples to the GraphQL database. For the sake of experimentaton, the tuples are saved as an aggregated 
-    // text document: all of the tuples are joined into one large string / document entry in the graph. This has limited
-    // effect in this exercise, but it would be a useful strategy for saving multiple tree searches as different documents.
+    // Saves the tuples to GraphQL. For the sake of experimentaton, the tuples are saved as an aggregated 
+    // text document: all of the tuples are joined into one large string / document entry. This has limited
+    // effect here, but it would be a useful strategy for saving multiple tuple lists as different documents.
     __saveToGraphQL(tuples) {
         const client = this.state.apollo;
         return client.mutate({
@@ -227,12 +228,12 @@ class App extends React.PureComponent {
             console.log("\nApp.__saveToDynamoDB() - DELETE completed");
         }
         
-        // The AWS tuples store the entire tuple as a string: name***size. There are only
-        // two fields in the DynamoDB table (id and the tuple string). It's a small
-        // efficiency boost, since splitting a string in the browser to reassemble the tuples
-        // later is cheaper, in terms of resources, than having another table field.
-        // It would be needed if the table needed to be searchable by either tuple key,
-        // but here we're saving and retrieving the tuples unmodified.
+        // The AWS table stores each tuple as a string in a line entry: name***size. There are only
+        // two fields in the DynamoDB table (id and the tuple string). It's a small efficiency boost, 
+        // since splitting a string in the browser to reassemble the tuples later is cheaper, in terms 
+        // of resources, than having another table field that would increase the table size, which AWS
+        // would charge you for. Another field would be needed if the table needed to be searchable by 
+        // either tuple key, but here we're saving and retrieving the tuples unmodified.
         function save(startIndex) {
             let i, item, puts = [];
             for (i = startIndex; i < startIndex + 25; i++) {
