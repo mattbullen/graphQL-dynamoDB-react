@@ -14,7 +14,7 @@ import { ApolloClient, createNetworkInterface, gql } from "react-apollo";
 import AWS from "aws-sdk";
 
 // Work around for deprecated Node function used by several dependencies.
-import { Querystring } from "request/lib/querystring.js";
+import Querystring from "request/lib/querystring.js";
 Querystring.prototype.unescape = function(value) { return window.encodeURIComponent(value); };
 
 // Needed for onTouchTap.
@@ -45,8 +45,8 @@ class App extends React.PureComponent {
     constructor(props) {
         super(props);
         
-        // This is a one-time, one-use component. It's not being passed any props from a parent component.
-        // In this scenario, simply using its internal state object for everything is simpler and more efficient. "45950"
+        // "App" is a one-time, one-use component. It's not being passed any props from a parent component.
+        // In this scenario, simply using its internal state object for everything is simpler and more efficient.
         this.state = {
             apollo: this.startApolloClient(),
             aws: {
@@ -104,6 +104,8 @@ class App extends React.PureComponent {
         this.setID = this.setID.bind(this);
     }
     
+	// Sets the AWS environment variables. This isn't a standard approach. I wanted to see
+	// if it could be done this way (seems to work fine).
     componentDidMount() {
         const app = this;
         fetch("https://cors-anywhere.herokuapp.com/http://www.matthewbullen.net/misc/string.php")
@@ -132,7 +134,10 @@ class App extends React.PureComponent {
         });
     }
     
-    // Creates an Apollo client to access the GraphQL database.
+    // Creates an Apollo client to access the GraphQL database. In production code, the URI would be hidden 
+	// in a process.env variable. That isn't done here since I used Heroku, and I ran out of time to write 
+	// a custom buildpack / Webpack config. Weirdly enough, a standard NPM plugin for accessing those variables 
+	// wasn't compatible with this build, either (the "dotenv" plugin).
     startApolloClient() {
         return new ApolloClient({
             networkInterface: createNetworkInterface({
@@ -143,7 +148,7 @@ class App extends React.PureComponent {
 
     // Saves the tuples to the GraphQL database. For the sake of experimentaton, the tuples are saved as an aggregated 
     // text document: all of the tuples are joined into one large string / document entry in the graph. This has limited
-    // effect in this exercise, but it would be a useful strategy for saving multiple different tree searches as different graph nodes.
+    // effect in this exercise, but it would be a useful strategy for saving multiple tree searches as different documents.
     __saveToGraphQL(tuples) {
         const client = this.state.apollo;
         return client.mutate({
@@ -183,6 +188,8 @@ class App extends React.PureComponent {
         const client = new AWS.DynamoDB.DocumentClient();
         
         wipe();
+		
+		// DynamoDB limits you to 25 queries / 16MB at a time.
         if (tuples.length > 25) {
             for (let i = 0; i < tuples.length; i = i + 25) {
                 save(i); 
@@ -193,6 +200,7 @@ class App extends React.PureComponent {
         scan();
         return "AWS DynamoDB transactions completed";
         
+		// Wipes any previous table entries.
         function wipe() {
             let i, j, deletes;
             for (i = 0; i < 300; i = i + 25) {
@@ -219,6 +227,12 @@ class App extends React.PureComponent {
             console.log("\nApp.__saveToDynamoDB() - DELETE completed");
         }
         
+		// The AWS tuples store the entire tuple as a string: name***size. There are only
+		// two fields in the DynamoDB table (id and the tuple string). It's a small
+		// efficiency boost, since splitting a string in the browser to reassemble the tuples
+		// later is cheaper, in terms of resources, than having another table field.
+		// It would be needed if the table needed to be searchable by either tuple key,
+		// but here we're saving and retrieving the tuples unmodified.
         function save(startIndex) {
             let i, item, puts = [];
             for (i = startIndex; i < startIndex + 25; i++) {
@@ -491,7 +505,7 @@ class App extends React.PureComponent {
             } else if (newValue === "") {
                 result = Array.from(this.state.tree);
             } else {
-                result = this.__numericSortArray(result, "size");
+                result = this.__numericSortDescending(result, "size");
             }
             newState = update(this.state, {
                 search: {
@@ -512,7 +526,7 @@ class App extends React.PureComponent {
             } else if (newValue === "") {
                 result = Array.from(this.state.tree);
             } else {
-                result = this.__numericSortArray(result, "size");
+                result = this.__numericSortDescending(result, "size");
             }
             newState = update(this.state, {
                 search: {
@@ -533,7 +547,7 @@ class App extends React.PureComponent {
             } else if (newValue === "") {
                 result = Array.from(this.state.tree);
             } else {
-                result = this.__numericSortArray(result, "size");
+                result = this.__numericSortDescending(result, "size");
             }
             newState = update(this.state, {
                 search: {
@@ -552,7 +566,7 @@ class App extends React.PureComponent {
     }
 
     // Sorts an array of objects by an object key referring to numeric values.
-    __numericSortArray(o, key) {
+    __numericSortDescending(o, key) {
         return o.sort((a, b) => {
             if (+a[key] > +b[key]) { return -1; }
             if (+a[key] < +b[key]) { return 1; }
@@ -560,7 +574,7 @@ class App extends React.PureComponent {
         });
     }
 
-    // Formats search results for display.
+    // Formats the assembled object tree for display.
     __formatJSON(json) {
         if (typeof json !== "string") {
             json = JSON.stringify(json, undefined, 5);
@@ -617,7 +631,7 @@ class App extends React.PureComponent {
         });
     }
 
-    // Reassemble the linear list of tuples back into an object tree, whuich then updates the DOM's display state.
+    // Reassembles the linear list of tuples back into an object tree, whuich then updates the DOM's display state.
     __tuplesToTree(tuplesList, dbName) {
         const newTree = this.__reassembleTree(tuplesList);
         const newState = update(this.state, {
@@ -637,7 +651,7 @@ class App extends React.PureComponent {
         });
     }
     
-    // Runs the dynamoDB sequence.
+    // Runs the AWS DynamoDB sequence.
     runDynamoDB() {
         console.log("\n----- AWS DynamoDB -----");
         
@@ -656,6 +670,11 @@ class App extends React.PureComponent {
                 new Promise((resolve, reject) => {
                     resolve(this.__saveToDynamoDB(tuples));
                 }).then((status) => {
+					
+					// I would rework this in a revised version. The AWS query results are saved to the component's 
+					// state in the Promise above, and React can sometimes be slow to update the state. Instead of
+					// using a time out, a generator or a Promise for an array of queries might be a little more elegant.
+					// The time out has the benefit of being simple and reliable, though.
                     window.setTimeout(() => {
                         console.log("\nApp.runDynamoDB() - updated status:", status);
                         this.__tuplesToTree(this.__assembleTuplesFromDynamoDB(), "DynamoDB");
@@ -675,7 +694,7 @@ class App extends React.PureComponent {
             resolve(this.__scrape(this.state.search.baseID));
         }).then((data) => {
 
-            // This provides a buffer in case of promise resolution timing issues. Not strictly needed, but doesn't hurt.
+            // Same promise timing buffer as above.
             window.setTimeout(() => {
 
                 // Create the list of tuples in the [{ name: __, size: __ }] format.
@@ -683,9 +702,10 @@ class App extends React.PureComponent {
                 let tuples = this.__merge(flattened);
                 console.log("\nApp.runGraphQL() - scraped tuples:", tuples);
 
-                // Save the aggregated list to GraphQL as stringified JSON. There is no need to save the tuples individually.
-                // Doing so would create an unnecessary performance hit. Note that GraphQL returns the saved list as well.
-                // There is no need for a second retrieval action in this exercise, since the tuples list will not change.
+                // Saves the aggregated list to GraphQL as stringified JSON - it's basically treating the aggregated tuples
+				// as a single document. This would be useful in cases where the code needed to save multiple sets of tuples
+				// for different tree searches (here, there's only one set). Note that GraphQL returns the saved list as well. 
+				// There is no need for a second retrieval action - it would have the same result.
                 new Promise((resolve, reject) => {
                     resolve(this.__saveToGraphQL(tuples))
                 }).then((result) => {
