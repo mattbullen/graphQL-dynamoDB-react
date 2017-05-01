@@ -104,8 +104,8 @@ class App extends React.PureComponent {
         this.setID = this.setID.bind(this);
     }
     
-	// Sets the AWS environment variables. This isn't a standard approach. I wanted to see
-	// if it could be done this way (seems to work fine).
+    // Sets the AWS environment variables. This isn't a standard approach. I wanted to see
+    // if it could be done this way (seems to work fine).
     componentDidMount() {
         const app = this;
         fetch("https://cors-anywhere.herokuapp.com/http://www.matthewbullen.net/misc/string.php")
@@ -135,9 +135,9 @@ class App extends React.PureComponent {
     }
     
     // Creates an Apollo client to access the GraphQL database. In production code, the URI would be hidden 
-	// in a process.env variable. That isn't done here since I used Heroku, and I ran out of time to write 
-	// a custom buildpack / Webpack config. Weirdly enough, a standard NPM plugin for accessing those variables 
-	// wasn't compatible with this build, either (the "dotenv" plugin).
+    // in a process.env variable. That isn't done here since I used Heroku, and I ran out of time to write 
+    // a custom buildpack / Webpack config. Weirdly enough, a standard NPM plugin for accessing those variables 
+    // wasn't compatible with this build, either (the "dotenv" plugin).
     startApolloClient() {
         return new ApolloClient({
             networkInterface: createNetworkInterface({
@@ -188,8 +188,8 @@ class App extends React.PureComponent {
         const client = new AWS.DynamoDB.DocumentClient();
         
         wipe();
-		
-		// DynamoDB limits you to 25 queries / 16MB at a time.
+        
+        // DynamoDB limits you to 25 queries / 16MB at a time.
         if (tuples.length > 25) {
             for (let i = 0; i < tuples.length; i = i + 25) {
                 save(i); 
@@ -200,7 +200,7 @@ class App extends React.PureComponent {
         scan();
         return "AWS DynamoDB transactions completed";
         
-		// Wipes any previous table entries.
+        // Wipes any previous table entries.
         function wipe() {
             let i, j, deletes;
             for (i = 0; i < 300; i = i + 25) {
@@ -227,12 +227,12 @@ class App extends React.PureComponent {
             console.log("\nApp.__saveToDynamoDB() - DELETE completed");
         }
         
-		// The AWS tuples store the entire tuple as a string: name***size. There are only
-		// two fields in the DynamoDB table (id and the tuple string). It's a small
-		// efficiency boost, since splitting a string in the browser to reassemble the tuples
-		// later is cheaper, in terms of resources, than having another table field.
-		// It would be needed if the table needed to be searchable by either tuple key,
-		// but here we're saving and retrieving the tuples unmodified.
+        // The AWS tuples store the entire tuple as a string: name***size. There are only
+        // two fields in the DynamoDB table (id and the tuple string). It's a small
+        // efficiency boost, since splitting a string in the browser to reassemble the tuples
+        // later is cheaper, in terms of resources, than having another table field.
+        // It would be needed if the table needed to be searchable by either tuple key,
+        // but here we're saving and retrieving the tuples unmodified.
         function save(startIndex) {
             let i, item, puts = [];
             for (i = startIndex; i < startIndex + 25; i++) {
@@ -670,11 +670,11 @@ class App extends React.PureComponent {
                 new Promise((resolve, reject) => {
                     resolve(this.__saveToDynamoDB(tuples));
                 }).then((status) => {
-					
-					// I would rework this in a revised version. The AWS query results are saved to the component's 
-					// state in the Promise above, and React can sometimes be slow to update the state. Instead of
-					// using a time out, a generator or a Promise for an array of queries might be a little more elegant.
-					// The time out has the benefit of being simple and reliable, though.
+                    
+                    // I would rework this in a revised version. The AWS query results are saved to the component's 
+                    // state in the Promise above, and React can sometimes be slow to update the state. Instead of
+                    // using a time out, a generator or a Promise for an array of queries might be a little more elegant.
+                    // The time out has the benefit of being simple and reliable, though.
                     window.setTimeout(() => {
                         console.log("\nApp.runDynamoDB() - updated status:", status);
                         this.__tuplesToTree(this.__assembleTuplesFromDynamoDB(), "DynamoDB");
@@ -703,9 +703,9 @@ class App extends React.PureComponent {
                 console.log("\nApp.runGraphQL() - scraped tuples:", tuples);
 
                 // Saves the aggregated list to GraphQL as stringified JSON - it's basically treating the aggregated tuples
-				// as a single document. This would be useful in cases where the code needed to save multiple sets of tuples
-				// for different tree searches (here, there's only one set). Note that GraphQL returns the saved list as well. 
-				// There is no need for a second retrieval action - it would have the same result.
+                // as a single document. This would be useful in cases where the code needed to save multiple sets of tuples
+                // for different tree searches (here, there's only one set). Note that GraphQL returns the saved list as well. 
+                // There is no need for a second retrieval action - it would have the same result.
                 new Promise((resolve, reject) => {
                     resolve(this.__saveToGraphQL(tuples))
                 }).then((result) => {
