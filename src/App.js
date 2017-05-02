@@ -218,7 +218,7 @@ class App extends React.PureComponent {
                 if (error) {
                     console.error("\nApp.__saveToDynamoDB() - GET error:", error);
                 } else {
-                    window.aws.scan = result.Items.length;
+                    window.aws.scan = result.Items.length + 10;
                 }
             });
         }
