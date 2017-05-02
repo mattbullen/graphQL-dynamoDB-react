@@ -382,6 +382,11 @@ class App extends React.PureComponent {
         }
         return result;
     }
+    
+    // Displays the number of pending v. completed scrape GET requests.
+    __displayScrapeProgress() {
+        document.getElementById("result").innerHTML = "Scraping the image library: total GET: " + (window.scrape.pending + 1) + ", completed GET: " + window.scrape.completed;
+    }
 
     // Scrapes the site for raw XML nodes. It uses a free proxy to get around CORS issues (and to enforce HTTPS).
     __scrape(id) {
@@ -405,6 +410,7 @@ class App extends React.PureComponent {
         }).then((xml) => {
             // console.log("\nApp.__scrape(" + id + ") - GET:", app.__xmlToJSON(xml));
             window.scrape.completed += 1;
+            app.__displayScrapeProgress();
             if (!xml) { return [null]; }
             return app.__xmlToJSON(xml);
         }).catch((error) => {
@@ -429,6 +435,7 @@ class App extends React.PureComponent {
                 this.scraped.push(id);
                 if (o["num_children"] && parseInt(o["num_children"], 10) > 0) {
                     window.scrape.pending += 1;
+                    this.__displayScrapeProgress();
                     new Promise((resolve, reject) => {
                         resolve(this.__scrape(id));
                     }).then((data) => {
@@ -696,7 +703,7 @@ class App extends React.PureComponent {
             pending: 0,
             completed: 0
         };
-        document.getElementById("result").innerHTML = "Scraping the image library . . .";
+        document.getElementById("result").innerHTML = "Scraping the image library: total GET: 0, completed GET: 0"
         const scrape = this.__scrape(this.state.search.baseID);
         scrape.then((data) => {
 
@@ -707,14 +714,12 @@ class App extends React.PureComponent {
             let check = window.setInterval(() => {
                 if (window.scrape.pending === window.scrape.completed) {
                     window.clearInterval(check);
-                    console.log("\nApp.runDynamoDB() - " + window.scrape.pending + " of " + window.scrape.completed + " fetch() queries completed");
                     complete();
                 }
             }, 50);
             window.setTimeout(() => {
                     if (window.scrape.pending === 0 && window.scrape.completed === 1) {
                         window.clearInterval(check);
-                        console.log("\nApp.runDynamoDB() - fetch() query completed");
                         complete();
                     }
             }, 1000);
@@ -753,7 +758,7 @@ class App extends React.PureComponent {
             pending: 0,
             completed: 0
         };
-        document.getElementById("result").innerHTML = "Scraping the image library . . .";
+        document.getElementById("result").innerHTML = "Scraping the image library: total GET: 0, completed GET: 0"
         const scrape = this.__scrape(this.state.search.baseID);
         scrape.then((data) => {
 
@@ -761,14 +766,12 @@ class App extends React.PureComponent {
             let check = window.setInterval(() => {
                 if (window.scrape.pending === window.scrape.completed) {
                     window.clearInterval(check);
-                    console.log("\nApp.runGraphQL() - " + window.scrape.pending + " of " + window.scrape.completed + " fetch() queries completed");
                     complete();
                 }
             }, 50);
             window.setTimeout(() => {
                 if (window.scrape.pending === 0 && window.scrape.completed === 1) {
                     window.clearInterval(check);
-                    console.log("\nApp.runGraphQL() - fetch() query completed");
                     complete();
                 }
             }, 500);
