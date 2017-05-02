@@ -242,6 +242,12 @@ class App extends React.PureComponent {
                         if (error) {
                             console.error("\nApp.__saveToDynamoDB() - DELETE error:", error);
                         } else {
+                            const newState = update(app.state, {
+                                aws: {
+                                    tuples: { $set: [] }
+                                }
+                            });
+                            app.setState(newState, () => {});
                             // console.log("\nApp.__saveToDynamoDB() - DELETE success:", result);
                         }
                     });
