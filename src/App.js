@@ -47,7 +47,7 @@ class App extends React.PureComponent {
         
         // "App" is a one-time, one-use component. It's not receiving any props from a parent component.
         // In this scenario, using the internal state object is simpler and more efficient than defining
-		// a separate static props object.
+        // a separate static props object.
         this.state = {
             apollo: this.startApolloClient(),
             aws: {
