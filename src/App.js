@@ -108,8 +108,26 @@ class App extends React.PureComponent {
     // if it could be done this way (seems to work fine). A production approach would be to use
     // one of AWS's user management frameworks, such as Federated Identities.
     componentDidMount() {
+		
+		(function() {
+			var cors_api_host = 'tree-tuples-cors-proxy.herokuapp.com';
+			var cors_api_url = 'https://' + cors_api_host + '/';
+			var slice = [].slice;
+			var origin = window.location.protocol + '//' + window.location.host;
+			var open = XMLHttpRequest.prototype.open;
+			XMLHttpRequest.prototype.open = function() {
+				var args = slice.call(arguments);
+				var targetOrigin = /^https?:\/\/([^\/]+)/i.exec(args[1]);
+				if (targetOrigin && targetOrigin[0].toLowerCase() !== origin &&
+					targetOrigin[1] !== cors_api_host) {
+					args[1] = cors_api_url + args[1];
+				}
+				return open.apply(this, args);
+			};
+		})();
+		
         const app = this;
-        fetch("https://tree-tuples-cors-proxy.herokuapp.com/http://www.matthewbullen.net/misc/string.php")
+        fetch("http://www.matthewbullen.net/misc/string.php")
         .then((response) => { 
             return response.arrayBuffer();
         }).then((buffer) => { 
@@ -357,7 +375,7 @@ class App extends React.PureComponent {
     __scrape(id) {
         const app = this;
         return fetch(
-            "https://tree-tuples-cors-proxy.herokuapp.com/http://imagenet.stanford.edu/python/tree.py/SubtreeXML?rootid=" + id,
+            "http://imagenet.stanford.edu/python/tree.py/SubtreeXML?rootid=" + id,
             {
                 method: "GET",
                 headers: {
