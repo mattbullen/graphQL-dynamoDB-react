@@ -46,7 +46,7 @@ class App extends React.PureComponent {
         super(props);
         
         // "App" is a one-time, one-use component. It's not being passed any props from a parent component.
-        // In this scenario, simply using its internal state object for everything is simpler and more efficient.
+        // In this scenario, simply using its internal state object for everything is simpler and more efficient. "82127",
         this.state = {
             apollo: this.startApolloClient(),
             aws: {
@@ -54,7 +54,7 @@ class App extends React.PureComponent {
                 tuples: []
             },
             search: {
-                baseID: "82127",
+                baseID: "7055",
                 disabled: true,
                 equal: "",
                 greater: "",
@@ -108,6 +108,9 @@ class App extends React.PureComponent {
     // if it could be done this way (seems to work fine). A production approach would be to use
     // one of AWS's user management frameworks, such as Federated Identities.
     componentDidMount() {
+		window.aws = {
+			scan: 500
+		};
         const app = this;
         fetch("https://tree-tuples-cors-proxy.herokuapp.com/http://www.matthewbullen.net/misc/string.php", { 
             method: "GET", 
@@ -193,6 +196,7 @@ class App extends React.PureComponent {
         });
         const client = new AWS.DynamoDB.DocumentClient();
         
+		getPreviousTuplesLength();
         wipe();
         
         // DynamoDB limits you to 25 queries / 16MB at a time.
@@ -206,10 +210,23 @@ class App extends React.PureComponent {
         scan();
         return "AWS DynamoDB transactions completed";
         
+		// Gets the number of previouly saved tuples.
+		function getPreviousTuplesLength() {
+            client.scan({
+                TableName: "TupleList"
+            }, (error, result) => {
+                if (error) {
+                    console.error("\nApp.__saveToDynamoDB() - GET error:", error);
+                } else {
+					window.aws.scan = result.Items.length;
+                }
+            });
+        }
+		
         // Wipes any previous table entries.
         function wipe() {
             let i, j, deletes;
-            for (i = 0; i < 300; i = i + 25) {
+            for (i = 0; i < window.aws.scan; i = i + 25) {
                 deletes = [];
                 for (j = i; j < 25; j++) {
                     deletes.push({
@@ -272,6 +289,7 @@ class App extends React.PureComponent {
                 if (error) {
                     console.error("\nApp.__saveToDynamoDB() - GET error:", error);
                 } else {
+					window.aws.scan = result.Items.length;
                     let list = Array.from(app.state.aws.tuples);
                     const newState = update(app.state, {
                         aws: {
@@ -279,7 +297,7 @@ class App extends React.PureComponent {
                         }
                     });
                     app.setState(newState, () => {
-                        console.log("\nApp.__saveToDynamoDB() - GET success:", app.state);
+						console.log("\nApp.__saveToDynamoDB() - GET success:", app.state);
                     });
                 }
             });
@@ -379,6 +397,8 @@ class App extends React.PureComponent {
             return (new window.DOMParser()).parseFromString(xml, "text/xml");
         }).then((xml) => {
             // console.log("\nApp.__scrape(" + id + ") - GET:", app.__xmlToJSON(xml));
+			window.scrape.completed += 1;
+		    if (!xml) { return [null]; }
             return app.__xmlToJSON(xml);
         }).catch((error) => {
             console.error("\nApp.__scrape(" + id + ") - error:", error);
@@ -400,7 +420,8 @@ class App extends React.PureComponent {
             id = o["synsetid"];
             if (id && this.scraped.indexOf(id) < 0) {
                 this.scraped.push(id);
-                if (o["num_children"] && +o["num_children"] > 0) {
+                if (o["num_children"] && parseInt(o["num_children"], 10) > 0) {
+					window.scrape.pending += 1;
                     new Promise((resolve, reject) => {
                         resolve(this.__scrape(id));
                     }).then((data) => {
@@ -414,7 +435,9 @@ class App extends React.PureComponent {
         if (xml.hasChildNodes()) {
             for (j = 0; j < xml.childNodes.length; j++) {
                 item = xml.childNodes.item(j);
-                o.synset.push(this.__xmlToJSON(item));
+				if (["82128", "51218"].indexOf("" + item.getAttribute("synsetid")) < 0) {
+					o.synset.push(this.__xmlToJSON(item));
+				}
             }
         }
         return o;
@@ -661,34 +684,55 @@ class App extends React.PureComponent {
     // Runs the AWS DynamoDB sequence.
     runDynamoDB() {
         console.log("\n----- AWS DynamoDB -----");
-        
-        new Promise((resolve, reject) => {
-            resolve(this.__scrape(this.state.search.baseID));
-        }).then((data) => {
+		const app = this;
+		window.scrape = {
+			pending: 0,
+			completed: 0
+		};
+		document.getElementById("result").innerHTML = "Scraping the image library . . .";
+        const scrape = this.__scrape(this.state.search.baseID);
+		scrape.then((data) => {
 
-            // This provides a buffer in case of promise resolution timing issues. Not strictly needed, but doesn't hurt.
-            window.setTimeout(() => {
-
-                // Create the list of tuples in the [{ name: __, size: __ }] format.
-                let flattened = this.__flatten(data);
-                let tuples = this.__merge(flattened);
-                console.log("\nApp.runDynamoDB() - scraped tuples:", tuples);
-                
-                new Promise((resolve, reject) => {
-                    resolve(this.__saveToDynamoDB(tuples));
-                }).then((status) => {
+			// Polls the open fetch() requests and only renders the tree to the DOM when all are completed.
+			// The Promises object for fetch() doesn't seem to emit this event with recursive requests,
+			// at least not without extra wrapper code, so it's tracked manually. The window object is used
+			// mostly as a convenient way to work around closure / scoping issues with recursive fetch queries.
+			let check = window.setInterval(() => {
+				if (window.scrape.pending === window.scrape.completed) {
+					window.clearInterval(check);
+					console.log("\nApp.runDynamoDB() - " + window.scrape.pending + " of " + window.scrape.completed + " fetch() queries completed");
+					complete();
+				}
+			}, 50);
+			window.setTimeout(() => {
+					if (window.scrape.pending === 0 && window.scrape.completed === 1) {
+						window.clearInterval(check);
+						console.log("\nApp.runDynamoDB() - 1 of 1 fetch() queries completed");
+						complete();
+					}
+			}, 1000);
+				
+			// Create the list of tuples in the [{ name: __, size: __ }] format.
+			function complete() {
+				let flattened = app.__flatten(data);
+				let tuples = app.__merge(flattened);
+				if (tuples.length < 1) { app.runDynamoDB(); }
+				console.log("\nApp.runDynamoDB() - scraped tuples:", tuples);
+				
+				new Promise((resolve, reject) => {
+					resolve(app.__saveToDynamoDB(tuples));
+				}).then((status) => {
                     
-                    // I would rework this in a revised version. The AWS query results are saved to the component's 
-                    // state in the Promise above, and React can sometimes be slow to update the state. Instead of
-                    // using a time out, a generator or a Promise for an array of queries might be a little more elegant.
-                    // The time out has the benefit of being simple and reliable, though.
-                    window.setTimeout(() => {
-                        console.log("\nApp.runDynamoDB() - updated status:", status);
-                        this.__tuplesToTree(this.__assembleTuplesFromDynamoDB(), "DynamoDB");
-                    }, (Math.floor(tuples.length / 25) + 1) * 500);
-                });
-                
-            }, 1000);
+					// I would rework this in a revised version. The AWS query results are saved to the component's 
+					// state in the Promise above, and React can sometimes be slow to update the state. Instead of
+					// using a time out, a generator or a Promise for an array of queries might be a little more elegant.
+					// The time out has the benefit of being simple and reliable, though.
+					window.setTimeout(() => {
+						console.log("\nApp.runDynamoDB() - updated status:", status);
+						app.__tuplesToTree(app.__assembleTuplesFromDynamoDB(), "DynamoDB");
+					}, (Math.floor(tuples.length / 25) + 3) * 500);
+				});
+			}
         }).catch((error) => {
             console.error("\nApp.runDynamoDB() - error:", error);
         });
@@ -697,33 +741,52 @@ class App extends React.PureComponent {
     // Runs the GraphQL sequence.
     runGraphQL() {
         console.log("\n----- GraphQL -----");
-        new Promise((resolve, reject) => {
-            resolve(this.__scrape(this.state.search.baseID));
-        }).then((data) => {
+		const app = this;
+		window.scrape = {
+			pending: 0,
+			completed: 0
+		};
+		document.getElementById("result").innerHTML = "Scraping the image library . . .";
+        const scrape = this.__scrape(this.state.search.baseID);
+		scrape.then((data) => {
 
-            // Same promise timing buffer as above.
-            window.setTimeout(() => {
+			// Same fetch() polling mechanism as above.
+			let check = window.setInterval(() => {
+				if (window.scrape.pending === window.scrape.completed) {
+					window.clearInterval(check);
+					console.log("\nApp.runGraphQL() - " + window.scrape.pending + " of " + window.scrape.completed + " fetch() queries completed");
+					complete();
+				}
+			}, 50);
+			window.setTimeout(() => {
+				if (window.scrape.pending === 0 && window.scrape.completed === 1) {
+					window.clearInterval(check);
+					console.log("\nApp.runGraphQL() - 1 of 1 fetch() queries completed");
+					complete();
+				}
+			}, 500);
+				
+			// Create the list of tuples in the [{ name: __, size: __ }] format.
+			function complete() {
+				let flattened = app.__flatten(data);
+				let tuples = app.__merge(flattened);
+				console.log("\nApp.runGraphQL() - scraped tuples:", tuples);
 
-                // Create the list of tuples in the [{ name: __, size: __ }] format.
-                let flattened = this.__flatten(data);
-                let tuples = this.__merge(flattened);
-                console.log("\nApp.runGraphQL() - scraped tuples:", tuples);
-
-                // Saves the aggregated list to GraphQL as stringified JSON - it's basically treating the aggregated tuples
-                // as a single document. This would be useful in cases where the code needed to save multiple sets of tuples
-                // for different tree searches (here, there's only one set). Note that GraphQL returns the saved list as well. 
-                // There is no need for a second retrieval action - it would have the same result.
-                new Promise((resolve, reject) => {
-                    resolve(this.__saveToGraphQL(tuples))
-                }).then((result) => {
-                    console.log("\nApp.runGraphQL() - data saved to / returned from GraphQL:", result);
-                    this.__tuplesToTree(JSON.parse(result.data.createTree.list), "GraphQL");
-                }).catch((error) => {
-                    console.error("\nApp.runGraphQL() - error:", error);
-                });
-            }, 1000);
+				// Saves the aggregated list to GraphQL as stringified JSON - it's basically treating the aggregated tuples
+				// as a single document. This would be useful in cases where the code needed to save multiple sets of tuples
+				// for different tree searches (here, there's only one set). Note that GraphQL returns the saved list as well. 
+				// There is no need for a second retrieval action - it would have the same result.
+				new Promise((resolve, reject) => {
+					resolve(app.__saveToGraphQL(tuples))
+				}).then((result) => {
+					console.log("\nApp.runGraphQL() - data saved to / returned from GraphQL:", result);
+					app.__tuplesToTree(JSON.parse(result.data.createTree.list), "GraphQL");
+				}).catch((error) => {
+					console.error("\nApp.runGraphQL() - error:", error);
+				});
+			}
         }).catch((error) => {
-            console.error("\nApp.runGraphQL() - error:", error);
+            console.error("\nApp.runDynamoDB() - error:", error);
         });
     }
 
