@@ -45,8 +45,9 @@ class App extends React.PureComponent {
     constructor(props) {
         super(props);
         
-        // "App" is a one-time, one-use component. It's not being passed any props from a parent component.
-        // In this scenario, simply using its internal state object for everything is simpler and more efficient. "82127",
+        // "App" is a one-time, one-use component. It's not receiving any props from a parent component.
+        // In this scenario, using the internal state object is simpler and more efficient than defining
+		// a separate static props object.
         this.state = {
             apollo: this.startApolloClient(),
             aws: {
