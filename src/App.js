@@ -109,9 +109,13 @@ class App extends React.PureComponent {
     // one of AWS's user management frameworks, such as Federated Identities.
     componentDidMount() {
         const app = this;
-		const headers = { method: "GET", headers: { "Origin": "https://tree-tuples.herokuapp.com" } };
-        fetch("https://tree-tuples-cors-proxy.herokuapp.com/http://www.matthewbullen.net/misc/string.php", headers)
-        .then((response) => { 
+        fetch("https://tree-tuples-cors-proxy.herokuapp.com/http://www.matthewbullen.net/misc/string.php", { 
+            method: "GET", 
+            headers: { 
+                "Origin": "https://tree-tuples.herokuapp.com"
+            },
+            mode: "cors"
+        }).then((response) => { 
             return response.arrayBuffer();
         }).then((buffer) => { 
             let u8, parsed;
@@ -363,7 +367,8 @@ class App extends React.PureComponent {
                 method: "GET",
                 headers: {
                     "Accept": "application/json",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Origin": "https://tree-tuples.herokuapp.com"
                 },
                 mode: "cors"
             }
