@@ -713,7 +713,7 @@ class App extends React.PureComponent {
             window.setTimeout(() => {
                     if (window.scrape.pending === 0 && window.scrape.completed === 1) {
                         window.clearInterval(check);
-                        console.log("\nApp.runDynamoDB() - 1 of 1 fetch() queries completed");
+                        console.log("\nApp.runDynamoDB() - fetch() query completed");
                         complete();
                     }
             }, 1000);
@@ -767,7 +767,7 @@ class App extends React.PureComponent {
             window.setTimeout(() => {
                 if (window.scrape.pending === 0 && window.scrape.completed === 1) {
                     window.clearInterval(check);
-                    console.log("\nApp.runGraphQL() - 1 of 1 fetch() queries completed");
+                    console.log("\nApp.runGraphQL() - fetch() query completed");
                     complete();
                 }
             }, 500);
