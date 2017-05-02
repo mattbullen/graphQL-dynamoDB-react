@@ -736,7 +736,7 @@ class App extends React.PureComponent {
                     window.setTimeout(() => {
                         console.log("\nApp.runDynamoDB() - updated status:", status);
                         app.__tuplesToTree(app.__assembleTuplesFromDynamoDB(), "DynamoDB");
-                    }, (Math.floor(tuples.length / 25) + 3) * 500);
+                    }, (Math.floor(tuples.length / 25) + 5) * 500);
                 });
             }
         }).catch((error) => {
